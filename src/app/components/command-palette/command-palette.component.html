@@ -1,0 +1,43 @@
+<div class="palette-backdrop" (mousedown)="close()">
+  <div class="palette" role="dialog" aria-modal="true" aria-label="Actions" (mousedown)="$event.stopPropagation()">
+    <input
+      #searchInput
+      class="palette-input"
+      type="text"
+      autocomplete="off"
+      spellcheck="false"
+      placeholder="Type an action or a file name…"
+      aria-label="Search actions"
+      role="combobox"
+      aria-expanded="true"
+      aria-controls="palette-list"
+      [attr.aria-activedescendant]="results.length ? 'palette-opt-' + active : null"
+      [(ngModel)]="query"
+      (ngModelChange)="filter()"
+      (keydown.arrowdown)="move(1, $event)"
+      (keydown.arrowup)="move(-1, $event)"
+      (keydown.enter)="runActive()"
+      (keydown.escape)="close($event)">
+    <div class="palette-list" id="palette-list" role="listbox">
+      <button
+        type="button"
+        role="option"
+        *ngFor="let c of results; let i = index"
+        [id]="'palette-opt-' + i"
+        [class.active]="i === active"
+        [attr.aria-selected]="i === active"
+        (mouseenter)="active = i"
+        (click)="run(c)">
+        <span class="group">{{ c.group }}</span>
+        <span class="label">{{ c.label }}</span>
+        <span class="hint" *ngIf="c.hint">{{ c.hint }}</span>
+      </button>
+      <div class="palette-empty" *ngIf="!results.length">No action matches “{{ query }}”.</div>
+    </div>
+    <div class="palette-foot">
+      <span><kbd>↑</kbd><kbd>↓</kbd> navigate</span>
+      <span><kbd>Enter</kbd> run</span>
+      <span><kbd>Esc</kbd> close</span>
+    </div>
+  </div>
+</div>
