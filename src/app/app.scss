@@ -111,19 +111,31 @@
     }
 
     button[mat-stroked-button] {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
       height: 32px;
-      line-height: 30px;
-      padding: 0 10px;
+      line-height: 1;
+      padding: 0 12px;
       min-width: unset;
       border-color: rgba(255, 255, 255, 0.2) !important;
       color: rgba(255, 255, 255, 0.85) !important;
       font-size: 12px;
 
       mat-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
         font-size: 16px;
         width: 16px;
         height: 16px;
-        margin-right: 4px;
+        margin: 0;
+      }
+
+      .btn-label {
+        line-height: 1;
       }
 
       &:hover {
@@ -138,8 +150,21 @@
     }
 
     .theme-toggle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      padding: 0;
       color: rgba(255, 255, 255, 0.8) !important;
       margin-left: 4px;
+
+      mat-icon {
+        width: 20px;
+        height: 20px;
+        font-size: 20px;
+        margin: 0;
+      }
     }
 
     .btn-label {
@@ -149,6 +174,11 @@
     @media (max-width: 768px) {
       .btn-label {
         display: none;
+      }
+
+      button[mat-stroked-button] {
+        gap: 0;
+        padding: 0 8px;
       }
     }
   }
