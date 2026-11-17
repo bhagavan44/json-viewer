@@ -21,6 +21,7 @@ import { JsonTableComponent } from './components/json-table/json-table.component
 import { SaveDialogComponent } from './components/save-dialog/save-dialog.component';
 import { FilesPanelComponent } from './components/files-panel/files-panel.component';
 import { AppHeaderComponent } from './components/app-header/app-header.component';
+import { CompareBarComponent } from './components/compare-bar/compare-bar.component';
 
 import { inject } from "@vercel/analytics"
 inject();
@@ -36,6 +37,7 @@ inject();
     SaveDialogComponent,
     FilesPanelComponent,
     AppHeaderComponent,
+    CompareBarComponent,
   ],
   imports: [
     BrowserModule,
