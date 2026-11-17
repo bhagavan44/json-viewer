@@ -58,8 +58,6 @@
       letter-spacing: 0;
     }
 
-    .flex-spacer { flex: 1; }
-
     .close-btn {
       @include mat.icon-button-overrides(
         (

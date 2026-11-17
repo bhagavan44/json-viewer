@@ -40,10 +40,6 @@
     }
   }
 
-  .flex-spacer {
-    flex: 1;
-  }
-
   .header-actions {
     @include mat.button-overrides(
       (
