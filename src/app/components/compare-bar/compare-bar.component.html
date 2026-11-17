@@ -1,0 +1,37 @@
+<div class="compare-bar">
+  <ng-container *ngIf="diff as d; else compareNotReady">
+    <span class="stat add">+{{ d.added }} added</span>
+    <span class="stat del">−{{ d.removed }} removed</span>
+    <span class="stat chg">~{{ d.changed }} changed</span>
+    <span class="identical" *ngIf="d.changes.length === 0">The two documents are identical.</span>
+    <span class="matched-by" *ngIf="matchArrays && d.arrayKeys.length" matTooltip="Array items were paired by these keys, so inserted or reordered items are not reported as changes">
+      Arrays matched by {{ d.arrayKeys.join(', ') }}
+    </span>
+  </ng-container>
+  <ng-template #compareNotReady>
+    <span class="compare-hint">
+      <mat-icon>info</mat-icon>{{ message }}
+    </span>
+  </ng-template>
+  <span class="flex-spacer"></span>
+  <span class="ignore-box" [class.invalid]="!!ignoreError">
+    <mat-icon aria-hidden="true">visibility_off</mat-icon>
+    <input type="text" [ngModel]="ignoreText" (ngModelChange)="ignoreTextChange.emit($event)" placeholder="Ignore paths, e.g. $..updatedAt"
+      aria-label="Paths to ignore (JSONPath, comma-separated)"
+      [title]="ignoreError || 'JSONPath expressions to leave out of the comparison, separated by commas'">
+  </span>
+  <span class="ignore-error" *ngIf="ignoreError" role="alert">{{ ignoreError }}</span>
+  <label class="check" matTooltip="Pair array items by an id-like key (id, sku, code…) instead of by position">
+    <input type="checkbox" [ngModel]="matchArrays" (ngModelChange)="matchArraysChange.emit($event)" [disabled]="!ready"> Match array items by key
+  </label>
+  <label class="check">
+    <input type="checkbox" [ngModel]="changesOnly" (ngModelChange)="changesOnlyChange.emit($event)" [disabled]="!ready"> Changes only
+  </label>
+  <button type="button" class="bar-btn" (click)="copyPatch.emit()" [disabled]="!ready"
+    matTooltip="Copy a JSON Patch (RFC 6902) that turns the left document into the right one. Arrays are patched by position; ignored paths are left out.">
+    <mat-icon>content_copy</mat-icon>JSON Patch
+  </button>
+  <button type="button" class="bar-btn" (click)="swap.emit()" matTooltip="Swap the left and right documents">
+    <mat-icon>swap_horiz</mat-icon>Swap sides
+  </button>
+</div>

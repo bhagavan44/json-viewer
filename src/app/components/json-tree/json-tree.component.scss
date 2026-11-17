@@ -1,3 +1,5 @@
+@use '../../../styles/mixins' as *;
+
 :host {
   display: flex;
   flex-direction: column;
@@ -12,15 +14,13 @@
   align-items: center;
   gap: 4px;
   padding: 5px 8px;
-  border-bottom: 1px solid var(--panel-border, #2f3747);
-  background: var(--panel-bg, transparent);
+  border-bottom: 1px solid var(--panel-border);
+  background: var(--panel-bg);
   flex-shrink: 0;
 
   .tb-icon {
-    font-size: 18px;
-    width: 18px;
-    height: 18px;
-    color: var(--text-secondary, #8090a8);
+    @include icon-size(18px);
+    color: var(--text-secondary);
     flex-shrink: 0;
   }
 
@@ -29,33 +29,33 @@
     min-width: 0;
     height: 26px;
     padding: 0 8px;
-    background: var(--app-bg, #1e2430);
-    border: 1px solid var(--panel-border, #2f3747);
+    background: var(--app-bg);
+    border: 1px solid var(--panel-border);
     border-radius: 4px;
-    color: var(--text-primary, #e0e6f0);
+    color: var(--text-primary);
     font-size: 12.5px;
     outline: none;
 
     &:focus {
-      border-color: #4a9eff;
+      border-color: var(--accent);
     }
 
     &::placeholder {
-      color: var(--text-secondary, #8090a8);
+      color: var(--text-secondary);
       opacity: 0.7;
     }
   }
 
   .tb-count {
     font-size: 11.5px;
-    color: var(--text-secondary, #8090a8);
+    color: var(--text-secondary);
     white-space: nowrap;
     min-width: 52px;
     text-align: right;
     font-variant-numeric: tabular-nums;
 
     &.bad {
-      color: #f14e53;
+      color: var(--color-error);
     }
   }
 
@@ -69,24 +69,22 @@
     border: 0;
     border-radius: 4px;
     background: none;
-    color: var(--text-secondary, #8090a8);
+    color: var(--text-secondary);
     cursor: pointer;
     flex-shrink: 0;
 
     mat-icon {
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
+      @include icon-size(18px);
     }
 
     &:hover:not([disabled]) {
-      background: rgba(74, 158, 255, 0.12);
-      color: #4a9eff;
+      background: rgba(var(--accent-rgb), 0.12);
+      color: var(--accent);
     }
 
     &.on {
-      background: rgba(74, 158, 255, 0.2);
-      color: #4a9eff;
+      background: rgba(var(--accent-rgb), 0.2);
+      color: var(--accent);
     }
 
     &[disabled] {
@@ -95,7 +93,7 @@
     }
 
     &:focus-visible {
-      outline: 2px solid #4a9eff;
+      outline: 2px solid var(--accent);
       outline-offset: 1px;
     }
   }
@@ -115,7 +113,7 @@
   outline: none;
 
   &:focus-visible {
-    box-shadow: inset 0 0 0 1px #4a9eff;
+    box-shadow: inset 0 0 0 1px var(--accent);
   }
 }
 
@@ -133,9 +131,7 @@
   text-align: center;
 
   mat-icon {
-    font-size: 48px;
-    width: 48px;
-    height: 48px;
+    @include icon-size(48px);
   }
 
   p {
@@ -154,14 +150,14 @@
 
   mat-icon,
   p {
-    color: #f14e53;
+    color: var(--color-error);
   }
 
   small {
-    color: #f14e53;
+    color: var(--color-error);
     opacity: 0.8;
     max-width: 300px;
-    word-break: break-word;
+    overflow-wrap: anywhere; // the non-deprecated form of word-break: break-word
   }
 }
 
@@ -169,7 +165,7 @@
   padding: 20px 16px;
   text-align: center;
   font-size: 13px;
-  color: var(--text-secondary, #8090a8);
+  color: var(--text-secondary);
 }
 
 // ─── Selected-node bar ────────────────────────────────────────────────────────
@@ -178,15 +174,15 @@
   align-items: center;
   gap: 10px;
   padding: 5px 8px 5px 12px;
-  border-top: 1px solid var(--panel-border, #2f3747);
-  background: var(--panel-header-bg, #1a1f2b);
+  border-top: 1px solid var(--panel-border);
+  background: var(--panel-header-bg);
   font-size: 12px;
   flex-shrink: 0;
   min-width: 0;
 
   .insp-path {
-    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
-    color: #4a9eff;
+    font-family: var(--font-mono);
+    color: var(--accent);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -194,7 +190,7 @@
   }
 
   .insp-meta {
-    color: var(--text-secondary, #8090a8);
+    color: var(--text-secondary);
     white-space: nowrap;
     flex-shrink: 0;
   }
@@ -209,28 +205,26 @@
     gap: 4px;
     height: 24px;
     padding: 0 8px;
-    border: 1px solid var(--panel-border, #2f3747);
+    border: 1px solid var(--panel-border);
     border-radius: 4px;
     background: none;
-    color: var(--text-primary, #e0e6f0);
+    color: var(--text-primary);
     font-size: 12px;
     cursor: pointer;
     white-space: nowrap;
     flex-shrink: 0;
 
     mat-icon {
-      font-size: 14px;
-      width: 14px;
-      height: 14px;
+      @include icon-size(14px);
     }
 
     &:hover {
-      border-color: #4a9eff;
-      color: #4a9eff;
+      border-color: var(--accent);
+      color: var(--accent);
     }
 
     &:focus-visible {
-      outline: 2px solid #4a9eff;
+      outline: 2px solid var(--accent);
       outline-offset: 1px;
     }
   }
@@ -243,13 +237,13 @@
   }
 
   .insp-btn.danger:hover {
-    border-color: #f14e53;
-    color: #f14e53;
+    border-color: var(--color-error);
+    color: var(--color-error);
   }
 
   .insp-btn.primary {
-    border-color: #4a9eff;
-    color: #4a9eff;
+    border-color: var(--accent);
+    color: var(--accent);
   }
 
   .edit-form {
@@ -261,23 +255,23 @@
   }
 
   .form-label {
-    color: var(--text-secondary, #8090a8);
+    color: var(--text-secondary);
     white-space: nowrap;
   }
 
   .form-input {
     height: 24px;
     padding: 0 6px;
-    border: 1px solid var(--panel-border, #2f3747);
+    border: 1px solid var(--panel-border);
     border-radius: 4px;
-    background: var(--app-bg, #1e2430);
-    color: var(--text-primary, #e0e6f0);
-    font: 12px 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    background: var(--app-bg);
+    color: var(--text-primary);
+    font: 12px var(--font-mono);
     outline: none;
     min-width: 0;
 
     &:focus {
-      border-color: #4a9eff;
+      border-color: var(--accent);
     }
 
     &.key {
@@ -290,7 +284,7 @@
   }
 
   .form-error {
-    color: #f14e53;
+    color: var(--color-error);
     white-space: nowrap;
   }
 }

@@ -1,0 +1,138 @@
+@use '@angular/material' as mat;
+@use '../../../styles/mixins' as *;
+
+.save-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.save-dialog {
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  width: 400px;
+  max-width: 90vw;
+  overflow: hidden;
+
+  .save-dialog-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--panel-border);
+    background: var(--panel-header-bg);
+
+    mat-icon {
+      color: var(--accent);
+      @include icon-size(20px);
+    }
+  }
+
+  .save-dialog-body {
+    padding: 16px;
+
+    .save-label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+    }
+
+    .save-input-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .save-input {
+      flex: 1;
+      height: 36px;
+      padding: 0 10px;
+      background: var(--app-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 6px;
+      color: var(--text-primary);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.15s;
+
+      &:focus {
+        border-color: var(--accent);
+      }
+
+      &::placeholder {
+        color: var(--text-secondary);
+        opacity: 0.6;
+      }
+    }
+
+    .dice-btn {
+      @include mat.icon-button-overrides((icon-color: var(--text-secondary)));
+      @include center-icon;
+      flex-shrink: 0;
+
+      &:hover {
+        @include mat.icon-button-overrides((icon-color: var(--accent)));
+      }
+    }
+  }
+
+  .save-dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 12px 16px;
+    border-top: 1px solid var(--panel-border);
+    background: var(--panel-header-bg);
+
+    @include mat.button-overrides(
+      (
+        outlined-container-height: 32px,
+        outlined-outline-color: var(--panel-border),
+        outlined-label-text-color: var(--text-secondary),
+        filled-container-height: 32px,
+        filled-container-color: var(--accent),
+        filled-label-text-color: #fff,
+        filled-disabled-container-color: var(--accent),
+        filled-disabled-label-text-color: #fff,
+        filled-container-shape: 4px,
+        filled-label-text-size: 13px,
+        filled-label-text-weight: 500,
+      )
+    );
+
+    button[mat-stroked-button] {
+      line-height: 30px;
+      min-width: 72px;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.06);
+      }
+    }
+
+    .save-confirm-btn {
+      min-width: 72px;
+
+      &[disabled] {
+        opacity: 0.4;
+        pointer-events: none;
+      }
+
+      &:hover:not([disabled]) {
+        @include mat.button-overrides((filled-container-color: var(--accent-hover)));
+      }
+    }
+  }
+}

@@ -1,0 +1,39 @@
+// Shared SCSS mixins. Use from a component stylesheet with
+// `@use '<relative path>/styles/mixins' as *;`.
+
+// A square glyph (usually a mat-icon): the font size and the box match.
+@mixin icon-size($size) {
+  font-size: $size;
+  width: $size;
+  height: $size;
+}
+
+// The 38px bar at the top of a pane, the files sidebar and the side panels. Uses the theme
+// colours defined on `.app-container`.
+@mixin bar-header {
+  display: flex;
+  align-items: center;
+  height: 38px;
+  background: var(--panel-header-bg);
+  border-bottom: 1px solid var(--panel-border);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+// Centre a mat-icon in an icon button. Material pads the button to centre the icon, but a
+// line-height taller than the icon pushes it down, so centre with flex instead.
+@mixin center-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+// One line of text, cut with an ellipsis.
+@mixin truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

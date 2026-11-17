@@ -1,9 +1,11 @@
+@use '../../../styles/mixins' as *;
+
 // ─── Tree node host ─────────────────────────────────────────────────────────
 :host {
   display: block;
   // Must match TREE_ROW_HEIGHT: the virtual scroller assumes fixed-height rows.
   height: 26px;
-  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', 'JetBrains Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 13px;
   line-height: 1;
 }
@@ -21,14 +23,14 @@
   gap: 2px;
 
   &:hover {
-    background: rgba(74, 158, 255, 0.07);
+    background: rgba(var(--accent-rgb), 0.07);
   }
 
   &.leaf {
     cursor: default;
 
     &:hover {
-      background: rgba(74, 158, 255, 0.04);
+      background: rgba(var(--accent-rgb), 0.04);
     }
   }
 }
@@ -47,9 +49,7 @@
   transition: transform 0.15s ease, color 0.15s;
 
   mat-icon {
-    font-size: 18px;
-    width: 18px;
-    height: 18px;
+    @include icon-size(18px);
     transition: transform 0.15s ease;
   }
 
@@ -58,8 +58,8 @@
   }
 
   &:hover {
-    color: #4a9eff;
-    background: rgba(74, 158, 255, 0.12);
+    color: var(--accent);
+    background: rgba(var(--accent-rgb), 0.12);
   }
 }
 
@@ -106,15 +106,13 @@
   color: #6b7a8d;
   font-size: 12px;
   max-width: 300px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  @include truncate;
   cursor: pointer;
 }
 
 .item-count {
-  background: rgba(74, 158, 255, 0.15);
-  color: #4a9eff;
+  background: rgba(var(--accent-rgb), 0.15);
+  color: var(--accent);
   font-size: 10px;
   font-weight: 600;
   padding: 1px 5px;
@@ -143,8 +141,8 @@
 // ─── Selection, search and diff states (declared after :hover so they win) ──
 .node-row {
   &.selected {
-    background: rgba(74, 158, 255, 0.16);
-    box-shadow: inset 2px 0 0 #4a9eff;
+    background: rgba(var(--accent-rgb), 0.16);
+    box-shadow: inset 2px 0 0 var(--accent);
   }
 
   // Rows matched by a JSONPath (plain-text matches are highlighted inside the text instead).
@@ -157,9 +155,9 @@
     outline-offset: -1px;
   }
 
-  &.mark-add { background: var(--diff-add-bg, rgba(76, 175, 125, 0.2)); }
-  &.mark-del { background: var(--diff-del-bg, rgba(241, 78, 83, 0.2)); }
-  &.mark-chg { background: var(--diff-chg-bg, rgba(230, 170, 60, 0.22)); }
+  &.mark-add { background: var(--diff-add-bg); }
+  &.mark-del { background: var(--diff-del-bg); }
+  &.mark-chg { background: var(--diff-chg-bg); }
 
   &.flash {
     animation: row-flash 1.1s ease-out;
@@ -167,7 +165,7 @@
 }
 
 @keyframes row-flash {
-  0%, 60% { outline: 2px solid #4a9eff; outline-offset: -2px; }
+  0%, 60% { outline: 2px solid var(--accent); outline-offset: -2px; }
   100% { outline: 2px solid transparent; outline-offset: -2px; }
 }
 
@@ -179,16 +177,16 @@
   flex-shrink: 0;
 }
 
-.mark-add .diff-gutter { color: var(--diff-add, #4caf7d); }
-.mark-del .diff-gutter { color: var(--diff-del, #f14e53); }
-.mark-chg .diff-gutter { color: var(--diff-chg, #e6aa3c); }
+.mark-add .diff-gutter { color: var(--diff-add); }
+.mark-del .diff-gutter { color: var(--diff-del); }
+.mark-chg .diff-gutter { color: var(--diff-chg); }
 
 .change-dot {
   margin-left: auto;
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--diff-chg, #e6aa3c);
+  background: var(--diff-chg);
   flex-shrink: 0;
 }
 

@@ -1,3 +1,5 @@
+@use '../../../styles/mixins' as *;
+
 :host {
   display: flex;
   flex-direction: column;
@@ -11,23 +13,23 @@
   align-items: center;
   gap: 4px;
   padding: 5px 8px;
-  border-bottom: 1px solid var(--panel-border, #2f3747);
-  background: var(--panel-bg, transparent);
+  border-bottom: 1px solid var(--panel-border);
+  background: var(--panel-bg);
   flex-shrink: 0;
 
   .tb-select,
   .tb-input {
     height: 26px;
     padding: 0 8px;
-    background: var(--app-bg, #1e2430);
-    border: 1px solid var(--panel-border, #2f3747);
+    background: var(--app-bg);
+    border: 1px solid var(--panel-border);
     border-radius: 4px;
-    color: var(--text-primary, #e0e6f0);
+    color: var(--text-primary);
     font-size: 12.5px;
     outline: none;
 
     &:focus {
-      border-color: #4a9eff;
+      border-color: var(--accent);
     }
   }
 
@@ -42,23 +44,21 @@
     min-width: 60px;
 
     &::placeholder {
-      color: var(--text-secondary, #8090a8);
+      color: var(--text-secondary);
       opacity: 0.7;
     }
   }
 
   .tb-icon {
-    font-size: 18px;
-    width: 18px;
-    height: 18px;
+    @include icon-size(18px);
     margin-left: 4px;
-    color: var(--text-secondary, #8090a8);
+    color: var(--text-secondary);
     flex-shrink: 0;
   }
 
   .tb-count {
     font-size: 11.5px;
-    color: var(--text-secondary, #8090a8);
+    color: var(--text-secondary);
     white-space: nowrap;
     font-variant-numeric: tabular-nums;
     padding: 0 4px;
@@ -74,19 +74,17 @@
     border: 0;
     border-radius: 4px;
     background: none;
-    color: var(--text-secondary, #8090a8);
+    color: var(--text-secondary);
     cursor: pointer;
     flex-shrink: 0;
 
     mat-icon {
-      font-size: 17px;
-      width: 17px;
-      height: 17px;
+      @include icon-size(17px);
     }
 
     &:hover:not([disabled]) {
-      background: rgba(74, 158, 255, 0.12);
-      color: var(--text-primary, #e0e6f0);
+      background: rgba(var(--accent-rgb), 0.12);
+      color: var(--text-primary);
     }
 
     &[disabled] {
@@ -105,17 +103,17 @@
 table {
   border-collapse: separate;
   border-spacing: 0;
-  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  font-family: var(--font-mono);
   font-size: 12.5px;
-  color: var(--text-primary, #e0e6f0);
+  color: var(--text-primary);
 }
 
 th,
 td {
   max-width: 280px;
   padding: 3px 10px;
-  border-bottom: 1px solid var(--panel-border, #2f3747);
-  border-right: 1px solid var(--panel-border, #2f3747);
+  border-bottom: 1px solid var(--panel-border);
+  border-right: 1px solid var(--panel-border);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -127,7 +125,7 @@ th {
   top: 0;
   z-index: 1;
   padding: 0;
-  background: var(--panel-header-bg, #1a1f2b);
+  background: var(--panel-header-bg);
   font-weight: 600;
 
   &.idx {
@@ -136,13 +134,13 @@ th {
 }
 
 .idx {
-  color: var(--text-secondary, #8090a8);
+  color: var(--text-secondary);
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
 td.idx {
-  background: var(--panel-header-bg, #1a1f2b);
+  background: var(--panel-header-bg);
 }
 
 td.missing {
@@ -150,7 +148,7 @@ td.missing {
 }
 
 tbody tr:hover td:not(.idx) {
-  background-color: rgba(74, 158, 255, 0.08);
+  background-color: rgba(var(--accent-rgb), 0.08);
 }
 
 .sort-btn {
@@ -172,36 +170,34 @@ tbody tr:hover td:not(.idx) {
   }
 
   mat-icon {
-    font-size: 14px;
-    width: 14px;
-    height: 14px;
+    @include icon-size(14px);
     flex-shrink: 0;
-    color: #4a9eff;
+    color: var(--accent);
   }
 
   &:hover {
-    color: #4a9eff;
+    color: var(--accent);
   }
 }
 
 .no-rows {
   padding: 16px;
-  color: var(--text-secondary, #8090a8);
+  color: var(--text-secondary);
   font-size: 13px;
 }
 
 .more-btn {
   margin: 10px;
   padding: 4px 12px;
-  border: 1px solid var(--panel-border, #2f3747);
+  border: 1px solid var(--panel-border);
   border-radius: 6px;
   background: none;
-  color: var(--text-primary, #e0e6f0);
+  color: var(--text-primary);
   font-size: 12.5px;
   cursor: pointer;
 
   &:hover {
-    border-color: #4a9eff;
+    border-color: var(--accent);
   }
 }
 
@@ -213,23 +209,21 @@ tbody tr:hover td:not(.idx) {
   flex: 1;
   gap: 6px;
   padding: 24px;
-  color: var(--text-secondary, #8090a8);
+  color: var(--text-secondary);
   text-align: center;
 
   mat-icon {
-    font-size: 40px;
-    width: 40px;
-    height: 40px;
+    @include icon-size(40px);
     opacity: 0.6;
   }
 
   p {
     margin: 0;
     font-size: 15px;
-    color: var(--text-primary, #e0e6f0);
+    color: var(--text-primary);
   }
 
   &.error mat-icon {
-    color: #f14e53;
+    color: var(--color-error);
   }
 }

@@ -15,6 +15,20 @@ html {
   );
 }
 
+// App-wide tokens, the same in both themes. Theme-specific colours live on `.app-container`
+// (app.scss). Defined on :root so Material overlays (menus, tooltips) can use them too.
+:root {
+  --accent: #4a9eff;
+  --accent-rgb: 74, 158, 255; // for tints: rgba(var(--accent-rgb), 0.15)
+  --accent-hover: #3a8eef;
+  // Status colours: parse errors, "Valid", the current breadcrumb step. Unlike the diff colours
+  // on .app-container, these stay the same in both themes.
+  --color-error: #f14e53;
+  --color-success: #4caf7d;
+  --color-warning: #e6aa3c;
+  --font-mono: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+}
+
 body {
   color-scheme: light dark;
   background-color: var(--mat-sys-surface);
@@ -48,6 +62,11 @@ body {
 // Material icon alignment helper
 .mat-icon {
   vertical-align: middle;
+}
+
+// Pushes the items after it to the end of a flex row.
+.flex-spacer {
+  flex: 1;
 }
 
 /* You can add global styles to this file, and also import other style files */

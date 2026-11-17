@@ -1,0 +1,285 @@
+@use '@angular/material' as mat;
+@use '../../../styles/mixins' as *;
+
+// The host doesn't render a box: the <aside> is the flex item in the parent's workspace row.
+:host {
+  display: contents;
+}
+
+.files-panel {
+  display: flex;
+  flex-direction: column;
+  width: 280px;
+  flex-shrink: 0;
+  background: var(--panel-bg);
+  border-right: 1px solid var(--panel-border);
+
+  &:not(.open) {
+    display: none;
+  }
+
+  // Narrow screens: slide in over the content instead of taking a column.
+  @media (max-width: 999px) {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    z-index: 500;
+    transform: translateX(-100%);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.35);
+
+    &:not(.open) {
+      display: flex;
+    }
+
+    &.open {
+      transform: translateX(0);
+    }
+  }
+
+  .files-panel-header {
+    @include bar-header;
+    gap: 8px;
+    padding: 0 6px 0 12px;
+    min-height: 38px;
+    flex-shrink: 0;
+
+    mat-icon {
+      color: var(--accent);
+      @include icon-size(16px);
+    }
+
+    .files-count {
+      padding: 0 6px;
+      border-radius: 9px;
+      background: rgba(var(--accent-rgb), 0.15);
+      color: var(--accent);
+      letter-spacing: 0;
+    }
+
+    .close-btn {
+      @include mat.icon-button-overrides(
+        (
+          state-layer-size: 28px,
+          icon-color: var(--text-secondary),
+        )
+      );
+      @include center-icon;
+
+      &:hover {
+        @include mat.icon-button-overrides((icon-color: var(--accent)));
+      }
+    }
+  }
+
+  .files-search {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--panel-border);
+    flex-shrink: 0;
+
+    .search-icon {
+      @include icon-size(18px);
+      color: var(--text-secondary);
+      flex-shrink: 0;
+    }
+
+    .search-input {
+      flex: 1;
+      min-width: 0;
+      height: 28px;
+      padding: 0 8px;
+      background: var(--app-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 4px;
+      color: var(--text-primary);
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.15s;
+
+      &:focus {
+        border-color: var(--accent);
+      }
+
+      &::placeholder {
+        color: var(--text-secondary);
+        opacity: 0.6;
+      }
+    }
+
+    .clear-search-btn {
+      @include mat.icon-button-overrides(
+        (
+          state-layer-size: 24px,
+          icon-size: 16px,
+          icon-color: var(--text-secondary),
+        )
+      );
+      @include center-icon;
+      flex-shrink: 0;
+
+      mat-icon {
+        @include icon-size(16px);
+      }
+    }
+  }
+
+  .files-list {
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  .files-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 48px 16px;
+    color: var(--text-secondary);
+    font-size: 13px;
+    text-align: center;
+
+    mat-icon {
+      @include icon-size(40px);
+      opacity: 0.35;
+    }
+
+    small {
+      font-size: 12px;
+      opacity: 0.8;
+    }
+  }
+
+  .file-item {
+    position: relative;
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--panel-border);
+    cursor: pointer;
+    transition: background 0.12s;
+
+    &:hover {
+      background: rgba(var(--accent-rgb), 0.07);
+    }
+
+    &.active {
+      background: rgba(var(--accent-rgb), 0.12);
+      box-shadow: inset 3px 0 0 var(--accent);
+    }
+
+    .file-item-main {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 3px;
+      min-width: 0;
+
+      .file-icon {
+        @include icon-size(15px);
+        color: var(--accent);
+        flex-shrink: 0;
+        opacity: 0.8;
+      }
+
+      .file-name {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-primary);
+        @include truncate;
+        min-width: 0;
+      }
+
+      .pane-badge {
+        flex-shrink: 0;
+        padding: 0 5px;
+        border-radius: 4px;
+        background: rgba(var(--accent-rgb), 0.2);
+        color: var(--accent);
+        font-size: 10px;
+        font-weight: 700;
+        line-height: 16px;
+      }
+    }
+
+    .file-item-meta {
+      display: flex;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--text-secondary);
+
+      .file-size {
+        margin-left: auto;
+      }
+    }
+
+    // Actions float over the meta line on hover / keyboard focus.
+    .file-item-actions {
+      display: none;
+      position: absolute;
+      right: 6px;
+      bottom: 4px;
+      gap: 2px;
+      padding-left: 6px;
+      background: var(--panel-bg);
+      border-radius: 4px;
+    }
+
+    &:hover .file-item-actions,
+    &:focus-within .file-item-actions {
+      display: flex;
+    }
+
+    .act-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 24px;
+      height: 22px;
+      padding: 0 4px;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      background: none;
+      color: var(--text-secondary);
+      font: 700 11px 'Roboto', sans-serif;
+      cursor: pointer;
+
+      mat-icon {
+        @include icon-size(15px);
+      }
+
+      &:hover {
+        color: var(--accent);
+        border-color: rgba(var(--accent-rgb), 0.5);
+      }
+
+      &.pane-open {
+        border-color: var(--panel-border);
+      }
+
+      &.delete-btn:hover {
+        color: #f44336;
+        border-color: rgba(244, 67, 54, 0.5);
+      }
+
+      &:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 1px;
+      }
+    }
+
+    .rename-input {
+      width: 100%;
+      height: 26px;
+      padding: 0 8px;
+      background: var(--app-bg);
+      border: 1px solid var(--accent);
+      border-radius: 4px;
+      color: var(--text-primary);
+      font-size: 13px;
+      outline: none;
+    }
+  }
+}

@@ -1,0 +1,68 @@
+<aside class="files-panel" [class.open]="open" aria-label="Saved files">
+  <div class="files-panel-header">
+    <mat-icon>folder_open</mat-icon>
+    <span>Saved files</span>
+    <span class="files-count">{{ total }}</span>
+    <span class="flex-spacer"></span>
+    <button mat-icon-button (click)="closed.emit()" class="sm-btn close-btn" matTooltip="Hide sidebar" aria-label="Hide saved files">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+  <div class="files-search">
+    <mat-icon class="search-icon">search</mat-icon>
+    <input
+      class="search-input"
+      [ngModel]="query"
+      (ngModelChange)="queryChange.emit($event)"
+      placeholder="Search names and contents…"
+      aria-label="Search saved files">
+    <button mat-icon-button *ngIf="query" (click)="queryChange.emit('')" class="sm-btn clear-search-btn" aria-label="Clear file search">
+      <mat-icon>clear</mat-icon>
+    </button>
+  </div>
+  <div class="files-list">
+    <div *ngIf="files.length === 0" class="files-empty">
+      <mat-icon>inbox</mat-icon>
+      <span>{{ query ? 'No files match' : 'No saved files yet' }}</span>
+      <small *ngIf="!query">Paste JSON and press Save to keep it here</small>
+    </div>
+    <div *ngFor="let file of files"
+         class="file-item"
+         [class.active]="file.id === leftFileId || file.id === rightFileId"
+         (click)="fileOpen.emit(file)">
+      <div class="file-item-main">
+        <ng-container *ngIf="renamingId === file.id; else nameDisplay">
+          <input
+            class="rename-input"
+            [ngModel]="renameValue"
+            (ngModelChange)="renameValueChange.emit($event)"
+            (keydown.enter)="renameConfirm.emit(file.id)"
+            (keydown.escape)="renameCancel.emit()"
+            (blur)="renameConfirm.emit(file.id)"
+            (click)="$event.stopPropagation()"
+            autofocus>
+        </ng-container>
+        <ng-template #nameDisplay>
+          <mat-icon class="file-icon">insert_drive_file</mat-icon>
+          <span class="file-name">{{ file.name }}</span>
+          <span class="pane-badge" *ngIf="file.id === leftFileId" matTooltip="Open in the left pane">L</span>
+          <span class="pane-badge" *ngIf="file.id === rightFileId" matTooltip="Open in the right pane">R</span>
+        </ng-template>
+      </div>
+      <div class="file-item-meta">
+        <span class="file-date">{{ formatDate(file.savedAt) }}</span>
+        <span class="file-size">{{ fileSize(file) }}</span>
+      </div>
+      <div class="file-item-actions" (click)="$event.stopPropagation()">
+        <button type="button" class="act-btn pane-open" (click)="fileOpenIn.emit({ file, side: 'left' })" matTooltip="Open in left pane" aria-label="Open in left pane">L</button>
+        <button type="button" class="act-btn pane-open" (click)="fileOpenIn.emit({ file, side: 'right' })" matTooltip="Open in right pane" aria-label="Open in right pane">R</button>
+        <button type="button" class="act-btn" (click)="renameStart.emit(file)" matTooltip="Rename" aria-label="Rename file">
+          <mat-icon>edit</mat-icon>
+        </button>
+        <button type="button" class="act-btn delete-btn" (click)="fileDelete.emit(file)" matTooltip="Delete" aria-label="Delete file">
+          <mat-icon>delete_outline</mat-icon>
+        </button>
+      </div>
+    </div>
+  </div>
+</aside>
