@@ -1,3 +1,5 @@
+@use '@angular/material' as mat;
+
 // ─── CSS variables ─────────────────────────────────────────────────────────
 :host {
   display: block;
@@ -61,11 +63,15 @@
 
 // ─── Header ────────────────────────────────────────────────────────────────
 .app-header {
-  background: var(--header-bg) !important;
-  color: var(--header-color) !important;
-  height: 52px !important;
-  min-height: 52px !important;
-  padding: 0 12px 0 16px !important;
+  @include mat.toolbar-overrides(
+    (
+      container-background-color: var(--header-bg),
+      container-text-color: var(--header-color),
+      standard-height: 52px,
+      mobile-height: 52px,
+    )
+  );
+  padding: 0 12px 0 16px;
   flex-shrink: 0;
   z-index: 10;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
@@ -94,6 +100,21 @@
   }
 
   .header-actions {
+    @include mat.button-overrides(
+      (
+        outlined-container-height: 32px,
+        outlined-horizontal-padding: 12px,
+        outlined-outline-color: rgba(255, 255, 255, 0.2),
+        outlined-label-text-size: 12px,
+      )
+    );
+    @include mat.icon-button-overrides(
+      (
+        state-layer-size: 32px,
+        icon-size: 20px,
+        icon-color: rgba(255, 255, 255, 0.8),
+      )
+    );
     display: flex;
     align-items: center;
     gap: 4px;
@@ -106,22 +127,18 @@
     }
 
     .active-btn {
-      background: rgba(74, 158, 255, 0.15) !important;
-      border-color: rgba(74, 158, 255, 0.5) !important;
+      background: rgba(74, 158, 255, 0.15);
     }
 
     button[mat-stroked-button] {
+      // Set on the button itself: mat-toolbar resets this token on buttons inside it.
+      @include mat.button-overrides((outlined-label-text-color: rgba(255, 255, 255, 0.85)));
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 6px;
-      height: 32px;
       line-height: 1;
-      padding: 0 12px;
       min-width: unset;
-      border-color: rgba(255, 255, 255, 0.2) !important;
-      color: rgba(255, 255, 255, 0.85) !important;
-      font-size: 12px;
 
       mat-icon {
         display: inline-flex;
@@ -139,8 +156,8 @@
       }
 
       &:hover {
-        background: rgba(255, 255, 255, 0.08) !important;
-        border-color: rgba(255, 255, 255, 0.4) !important;
+        @include mat.button-overrides((outlined-outline-color: rgba(255, 255, 255, 0.4)));
+        background: rgba(255, 255, 255, 0.08);
       }
 
       &[disabled] {
@@ -153,10 +170,6 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 32px;
-      height: 32px;
-      padding: 0;
-      color: rgba(255, 255, 255, 0.8) !important;
       margin-left: 4px;
 
       mat-icon {
@@ -176,9 +189,10 @@
         display: none;
       }
 
+      @include mat.button-overrides((outlined-horizontal-padding: 8px));
+
       button[mat-stroked-button] {
         gap: 0;
-        padding: 0 8px;
       }
     }
   }
@@ -246,11 +260,13 @@
     }
 
     .sm-btn {
-      width: 28px !important;
-      height: 28px !important;
+      @include mat.icon-button-overrides(
+        (
+          state-layer-size: 28px,
+          icon-size: 16px,
+        )
+      );
       line-height: 28px;
-      padding: 0 !important;
-      --mdc-icon-button-state-layer-size: 28px;
       flex-shrink: 0;
 
       mat-icon {
@@ -259,11 +275,6 @@
         height: 16px;
         color: inherit;
         line-height: 1;
-      }
-
-      .mat-mdc-button-touch-target {
-        width: 28px !important;
-        height: 28px !important;
       }
 
       &:hover {
@@ -641,11 +652,11 @@
     }
 
     .dice-btn {
-      color: var(--text-secondary) !important;
+      @include mat.icon-button-overrides((icon-color: var(--text-secondary)));
       flex-shrink: 0;
 
       &:hover {
-        color: #4a9eff !important;
+        @include mat.icon-button-overrides((icon-color: #4a9eff));
       }
     }
   }
@@ -658,26 +669,33 @@
     border-top: 1px solid var(--panel-border);
     background: var(--panel-header-bg);
 
+    @include mat.button-overrides(
+      (
+        outlined-container-height: 32px,
+        outlined-outline-color: var(--panel-border),
+        outlined-label-text-color: var(--text-secondary),
+        filled-container-height: 32px,
+        filled-container-color: #4a9eff,
+        filled-label-text-color: #fff,
+        filled-disabled-container-color: #4a9eff,
+        filled-disabled-label-text-color: #fff,
+        filled-container-shape: 4px,
+        filled-label-text-size: 13px,
+        filled-label-text-weight: 500,
+      )
+    );
+
     button[mat-stroked-button] {
-      border-color: var(--panel-border) !important;
-      color: var(--text-secondary) !important;
-      height: 32px;
       line-height: 30px;
       min-width: 72px;
 
       &:hover {
-        background: rgba(255, 255, 255, 0.06) !important;
+        background: rgba(255, 255, 255, 0.06);
       }
     }
 
     .save-confirm-btn {
-      height: 32px;
       min-width: 72px;
-      background: #4a9eff !important;
-      color: #fff !important;
-      border-radius: 4px;
-      font-size: 13px;
-      font-weight: 500;
 
       &[disabled] {
         opacity: 0.4;
@@ -685,7 +703,7 @@
       }
 
       &:hover:not([disabled]) {
-        background: #3a8eef !important;
+        @include mat.button-overrides((filled-container-color: #3a8eef));
       }
     }
   }
@@ -1077,15 +1095,16 @@
     .flex-spacer { flex: 1; }
 
     .close-btn {
-      width: 28px !important;
-      height: 28px !important;
-      padding: 0 !important;
+      @include mat.icon-button-overrides(
+        (
+          state-layer-size: 28px,
+          icon-color: var(--text-secondary),
+        )
+      );
       line-height: 28px;
-      color: var(--text-secondary) !important;
-      --mdc-icon-button-state-layer-size: 28px;
 
       &:hover {
-        color: #4a9eff !important;
+        @include mat.icon-button-overrides((icon-color: #4a9eff));
       }
     }
   }
@@ -1130,13 +1149,15 @@
     }
 
     .clear-search-btn {
-      width: 24px !important;
-      height: 24px !important;
-      padding: 0 !important;
-      line-height: 24px !important;
-      color: var(--text-secondary) !important;
+      @include mat.icon-button-overrides(
+        (
+          state-layer-size: 24px,
+          icon-size: 16px,
+          icon-color: var(--text-secondary),
+        )
+      );
+      line-height: 24px;
       flex-shrink: 0;
-      --mdc-icon-button-state-layer-size: 24px;
 
       mat-icon {
         font-size: 16px;
