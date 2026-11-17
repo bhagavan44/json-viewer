@@ -23,7 +23,7 @@ npm run e2e                     # end-to-end tests (Playwright; `npx playwright 
 
 Before calling a task done, run the tests and the production build, and `npm run lint:styles` if
 you changed a stylesheet. Run `npm run e2e` too if you changed UI behaviour. CI runs the style lint, the unit tests and the
-build on every PR and on pushes to `main`, plus the end-to-end tests in a separate job.
+build on every PR, plus the end-to-end tests in a separate job.
 
 The build prints a bundle-size budget warning for the initial bundle (Monaco). It is expected today
 and is not a failure; don't treat it as a regression unless the build errors. A component style
