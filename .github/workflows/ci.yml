@@ -13,7 +13,35 @@ permissions:
   contents: read
 
 jobs:
+  # Skips the jobs below when only docs or other non-source files changed. A job skipped by `if`
+  # still satisfies the required `test-and-build` check, unlike a workflow-level `paths` filter.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - id: filter
+        env:
+          EVENT: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          # For a PR, HEAD is the merge commit and HEAD^1 is the base branch.
+          if [ "$EVENT" = pull_request ]; then base=HEAD^1; else base=$BEFORE; fi
+          if git cat-file -e "$base^{commit}" 2>/dev/null && git diff --quiet "$base" HEAD -- \
+            src public e2e angular.json package.json package-lock.json 'tsconfig*.json' \
+            playwright.config.ts stylelint.config.mjs .github/workflows/ci.yml; then
+            echo "code=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          fi
+
   test-and-build:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -36,6 +64,8 @@ jobs:
         run: npm run build
 
   e2e:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
