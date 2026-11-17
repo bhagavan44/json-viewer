@@ -149,3 +149,11 @@ src/app/
 - **The app runs without zone.js** (the Angular 21 default). State changed inside a promise or timer is not rendered until something calls `markForCheck()`, so call it after async updates.
 - The tree renders only the rows in view (CDK virtual scroll), so every row must be exactly `TREE_ROW_HEIGHT` px tall (`json-tree.component.ts` and `json-tree-node.component.scss`).
 - Node paths use one format everywhere (`$`, `$.items[1].qty`, `$["a b"]`): the tree, the diff, JSONPath results and "Copy path" all share `childPath()` in `json-utils.ts`.
+
+## Contributing
+
+Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, conventions and the pull request process, and [SECURITY.md](SECURITY.md) to report a vulnerability privately. This project follows a [Code of Conduct](CODE_OF_CONDUCT.md).
+
+## License
+
+[GNU General Public License v3.0](LICENSE)
