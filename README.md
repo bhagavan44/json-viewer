@@ -107,7 +107,7 @@ npm test           # unit tests (Vitest)
 npm run lint:styles   # Stylelint over the SCSS
 ```
 
-CI (`.github/workflows/ci.yml`) runs the unit tests and the production build on every pull request and on pushes to `main`.
+CI (`.github/workflows/ci.yml`) runs the style lint, the unit tests and the production build on every pull request and on pushes to `main`.
 
 The production build is plain static files and can be served from any static host (it is deployed on Vercel).
 

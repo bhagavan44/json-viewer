@@ -21,7 +21,8 @@ npm run lint:styles             # Stylelint over src/**/*.scss
 ```
 
 Before calling a task done, run the tests and the production build, and `npm run lint:styles` if
-you changed a stylesheet. CI runs the tests and the build on every PR and on pushes to `main`.
+you changed a stylesheet. CI runs the style lint, the tests and the build on every PR and on pushes
+to `main`.
 
 The build prints bundle-size budget warnings for the initial bundle and `app.scss`. They are
 expected today and are not failures; don't treat them as a regression unless the build errors.

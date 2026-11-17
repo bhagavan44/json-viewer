@@ -26,6 +26,9 @@ jobs:
 
       - run: npm ci
 
+      - name: Style lint
+        run: npm run lint:styles
+
       - name: Unit tests
         run: npx ng test --watch=false
 
