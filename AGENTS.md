@@ -24,8 +24,9 @@ Before calling a task done, run the tests and the production build, and `npm run
 you changed a stylesheet. CI runs the style lint, the tests and the build on every PR and on pushes
 to `main`.
 
-The build prints bundle-size budget warnings for the initial bundle and `app.scss`. They are
-expected today and are not failures; don't treat them as a regression unless the build errors.
+The build prints a bundle-size budget warning for the initial bundle (Monaco). It is expected today
+and is not a failure; don't treat it as a regression unless the build errors. A component style
+budget warning (over 12 kB) is new, so split the stylesheet into a child component instead.
 
 ## Code conventions
 
