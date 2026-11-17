@@ -1,0 +1,44 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: friday
+      time: '19:00'
+      timezone: Asia/Kolkata
+    assignees:
+      - bhagavan44
+    open-pull-requests-limit: 10
+    groups:
+      angular:
+        patterns:
+          - '@angular/*'
+          - '@angular-devkit/*'
+          - 'typescript'
+          - 'tslib'
+          - 'zone.js'
+      monaco:
+        patterns:
+          - 'monaco-editor'
+          - 'ngx-monaco-editor-v2'
+      testing:
+        patterns:
+          - 'vitest'
+          - '@vitest/*'
+          - 'jsdom'
+          - 'fake-indexeddb'
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: friday
+      time: '19:00'
+      timezone: Asia/Kolkata
+    assignees:
+      - bhagavan44
+    groups:
+      github-actions:
+        patterns:
+          - '*'
