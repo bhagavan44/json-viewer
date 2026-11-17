@@ -104,10 +104,13 @@ npm ci
 npm start          # dev server at http://localhost:4200
 npm run build      # production build in dist/json-viewer/browser (static files)
 npm test           # unit tests (Vitest)
+npm run e2e        # end-to-end tests (Playwright, Chromium); run `npx playwright install chromium` once first
 npm run lint:styles   # Stylelint over the SCSS
 ```
 
-CI (`.github/workflows/ci.yml`) runs the style lint, the unit tests and the production build on every pull request and on pushes to `main`.
+CI (`.github/workflows/ci.yml`) runs the style lint, the unit tests and the production build on every pull request and on pushes to `main`, and the end-to-end tests in a parallel job (the Playwright report is uploaded as an artifact).
+
+The end-to-end tests live in `e2e/`. Playwright starts `ng serve --configuration production` on port 4300 (or reuses one already running there locally). Tests seed the panes through `#s=` share links (`e2e/helpers.ts`), so they need no saved state.
 
 The production build is plain static files and can be served from any static host (it is deployed on Vercel).
 

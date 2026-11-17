@@ -18,11 +18,12 @@ npm run build                   # production build -> dist/json-viewer/browser
 npm test                        # unit tests (Vitest, watch mode)
 npx ng test --watch=false       # unit tests once, as CI runs them
 npm run lint:styles             # Stylelint over src/**/*.scss
+npm run e2e                     # end-to-end tests (Playwright; `npx playwright install chromium` once)
 ```
 
 Before calling a task done, run the tests and the production build, and `npm run lint:styles` if
-you changed a stylesheet. CI runs the style lint, the tests and the build on every PR and on pushes
-to `main`.
+you changed a stylesheet. Run `npm run e2e` too if you changed UI behaviour. CI runs the style lint, the unit tests and the
+build on every PR and on pushes to `main`, plus the end-to-end tests in a separate job.
 
 The build prints a bundle-size budget warning for the initial bundle (Monaco). It is expected today
 and is not a failure; don't treat it as a regression unless the build errors. A component style
@@ -75,6 +76,8 @@ budget warning (over 12 kB) is new, so split the stylesheet into a child compone
 - Tests are Vitest specs run through `ng test`, using jsdom and `fake-indexeddb`.
 - Add or update a spec with every change to a util. UI-only style changes need a manual check in the
   running app.
+- End-to-end tests are Playwright specs in `e2e/`. Seed documents with `openShared()` from
+  `e2e/helpers.ts` rather than typing into Monaco.
 
 ## Git
 
