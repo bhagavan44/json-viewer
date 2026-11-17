@@ -44,8 +44,10 @@ budget warning (over 12 kB) is new, so split the stylesheet into a child compone
   newline, no trailing whitespace). Some existing files aren't fully formatted, so don't reformat code you aren't
   changing.
 - **Styles:** use the tokens in `src/styles.scss` (`--accent`, `rgba(var(--accent-rgb), …)`,
-  `--accent-hover`, `--font-mono`) and the theme colours on `.app-container` in `app.scss`, not
-  raw hex values. Shared mixins (`icon-size()`, `truncate`) are in `src/styles/_mixins.scss`.
+  `--accent-hover`, `--color-error` / `-success` / `-warning`, `--font-mono`) and the theme
+  colours on `.app-container` in `app.scss`, not raw hex values or `var()` fallbacks. Shared
+  mixins (`icon-size()`, `center-icon`, `truncate`, `bar-header`) are in
+  `src/styles/_mixins.scss`; `.flex-spacer` is a global utility.
   Customise Material with its `mat.*-overrides()` token mixins, not `!important`. Stylelint
   enforces the last two rules.
 - Use the existing code style, naming and folder structure. Don't introduce new patterns without
