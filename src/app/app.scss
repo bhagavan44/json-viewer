@@ -335,7 +335,7 @@
       }
 
       &.current {
-        color: #e6aa3c;
+        color: var(--color-warning);
       }
     }
 
@@ -365,8 +365,8 @@
       @include icon-size(12px);
     }
 
-    &.valid  { color: #4caf7d; }
-    &.invalid { color: #f14e53; }
+    &.valid  { color: var(--color-success); }
+    &.invalid { color: var(--color-error); }
     &.empty  { color: #8090a8; }
   }
 
@@ -388,7 +388,7 @@
     border: 0;
     background: none;
     font: inherit;
-    color: #f14e53;
+    color: var(--color-error);
     @include truncate;
     max-width: 320px;
     cursor: pointer;

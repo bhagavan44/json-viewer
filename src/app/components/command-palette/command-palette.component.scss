@@ -13,10 +13,10 @@
   width: 100%;
   max-width: 560px;
   overflow: hidden;
-  border: 1px solid var(--panel-border, #2f3747);
+  border: 1px solid var(--panel-border);
   border-radius: 12px;
-  background: var(--panel-bg, #252b38);
-  color: var(--text-primary, #e0e6f0);
+  background: var(--panel-bg);
+  color: var(--text-primary);
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
 }
 
@@ -24,14 +24,14 @@
   width: 100%;
   padding: 14px 16px;
   border: 0;
-  border-bottom: 1px solid var(--panel-border, #2f3747);
+  border-bottom: 1px solid var(--panel-border);
   background: none;
   color: inherit;
   font: 15px 'Roboto', sans-serif;
   outline: none;
 
   &::placeholder {
-    color: var(--text-secondary, #8090a8);
+    color: var(--text-secondary);
   }
 }
 
@@ -61,7 +61,7 @@
     .group {
       flex: none;
       width: 76px;
-      color: var(--text-secondary, #8090a8);
+      color: var(--text-secondary);
       font-size: 11px;
       letter-spacing: 0.06em;
       text-transform: uppercase;
@@ -88,7 +88,7 @@
 
 .palette-empty {
   padding: 18px 12px;
-  color: var(--text-secondary, #8090a8);
+  color: var(--text-secondary);
   font-size: 13px;
 }
 
@@ -96,15 +96,15 @@
   display: flex;
   gap: 16px;
   padding: 7px 14px;
-  border-top: 1px solid var(--panel-border, #2f3747);
-  background: var(--panel-header-bg, #1a1f2b);
-  color: var(--text-secondary, #8090a8);
+  border-top: 1px solid var(--panel-border);
+  background: var(--panel-header-bg);
+  color: var(--text-secondary);
   font-size: 11.5px;
 
   kbd {
     margin-right: 3px;
     padding: 0 5px;
-    border: 1px solid var(--panel-border, #2f3747);
+    border: 1px solid var(--panel-border);
     border-radius: 4px;
     font: 11px 'Cascadia Code', 'Consolas', monospace;
   }

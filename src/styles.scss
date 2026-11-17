@@ -21,6 +21,11 @@ html {
   --accent: #4a9eff;
   --accent-rgb: 74, 158, 255; // for tints: rgba(var(--accent-rgb), 0.15)
   --accent-hover: #3a8eef;
+  // Status colours: parse errors, "Valid", the current breadcrumb step. Unlike the diff colours
+  // on .app-container, these stay the same in both themes.
+  --color-error: #f14e53;
+  --color-success: #4caf7d;
+  --color-warning: #e6aa3c;
   --font-mono: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
 }
 

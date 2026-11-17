@@ -155,9 +155,9 @@
     outline-offset: -1px;
   }
 
-  &.mark-add { background: var(--diff-add-bg, rgba(76, 175, 125, 0.2)); }
-  &.mark-del { background: var(--diff-del-bg, rgba(241, 78, 83, 0.2)); }
-  &.mark-chg { background: var(--diff-chg-bg, rgba(230, 170, 60, 0.22)); }
+  &.mark-add { background: var(--diff-add-bg); }
+  &.mark-del { background: var(--diff-del-bg); }
+  &.mark-chg { background: var(--diff-chg-bg); }
 
   &.flash {
     animation: row-flash 1.1s ease-out;
@@ -177,16 +177,16 @@
   flex-shrink: 0;
 }
 
-.mark-add .diff-gutter { color: var(--diff-add, #4caf7d); }
-.mark-del .diff-gutter { color: var(--diff-del, #f14e53); }
-.mark-chg .diff-gutter { color: var(--diff-chg, #e6aa3c); }
+.mark-add .diff-gutter { color: var(--diff-add); }
+.mark-del .diff-gutter { color: var(--diff-del); }
+.mark-chg .diff-gutter { color: var(--diff-chg); }
 
 .change-dot {
   margin-left: auto;
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--diff-chg, #e6aa3c);
+  background: var(--diff-chg);
   flex-shrink: 0;
 }
 

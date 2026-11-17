@@ -5,10 +5,18 @@ export default {
     // Guards for the conventions in src/styles.scss and src/styles/_mixins.scss.
     // Material is customised through its token mixins (mat.*-overrides), not !important.
     'declaration-no-important': true,
-    // Use var(--accent), var(--accent-hover) and rgba(var(--accent-rgb), …). Custom properties
-    // (the token definitions themselves) are exempt.
+    // Use the tokens from src/styles.scss: var(--accent), var(--accent-hover),
+    // rgba(var(--accent-rgb), …) and the --color-* status colours. Custom properties (the token
+    // definitions themselves) are exempt.
     'declaration-property-value-disallowed-list': {
-      '/^(?!--)/': ['/#4a9eff/i', '/#3a8eef/i', '/74,\\s*158,\\s*255/'],
+      '/^(?!--)/': [
+        '/#4a9eff/i',
+        '/#3a8eef/i',
+        '/74,\\s*158,\\s*255/',
+        '/#f14e53/i',
+        '/#4caf7d/i',
+        '/#e6aa3c/i',
+      ],
     },
 
     // Angular's ::ng-deep is needed for content injected with [innerHTML].

@@ -14,13 +14,13 @@
   align-items: center;
   gap: 4px;
   padding: 5px 8px;
-  border-bottom: 1px solid var(--panel-border, #2f3747);
-  background: var(--panel-bg, transparent);
+  border-bottom: 1px solid var(--panel-border);
+  background: var(--panel-bg);
   flex-shrink: 0;
 
   .tb-icon {
     @include icon-size(18px);
-    color: var(--text-secondary, #8090a8);
+    color: var(--text-secondary);
     flex-shrink: 0;
   }
 
@@ -29,10 +29,10 @@
     min-width: 0;
     height: 26px;
     padding: 0 8px;
-    background: var(--app-bg, #1e2430);
-    border: 1px solid var(--panel-border, #2f3747);
+    background: var(--app-bg);
+    border: 1px solid var(--panel-border);
     border-radius: 4px;
-    color: var(--text-primary, #e0e6f0);
+    color: var(--text-primary);
     font-size: 12.5px;
     outline: none;
 
@@ -41,21 +41,21 @@
     }
 
     &::placeholder {
-      color: var(--text-secondary, #8090a8);
+      color: var(--text-secondary);
       opacity: 0.7;
     }
   }
 
   .tb-count {
     font-size: 11.5px;
-    color: var(--text-secondary, #8090a8);
+    color: var(--text-secondary);
     white-space: nowrap;
     min-width: 52px;
     text-align: right;
     font-variant-numeric: tabular-nums;
 
     &.bad {
-      color: #f14e53;
+      color: var(--color-error);
     }
   }
 
@@ -69,7 +69,7 @@
     border: 0;
     border-radius: 4px;
     background: none;
-    color: var(--text-secondary, #8090a8);
+    color: var(--text-secondary);
     cursor: pointer;
     flex-shrink: 0;
 
@@ -150,11 +150,11 @@
 
   mat-icon,
   p {
-    color: #f14e53;
+    color: var(--color-error);
   }
 
   small {
-    color: #f14e53;
+    color: var(--color-error);
     opacity: 0.8;
     max-width: 300px;
     overflow-wrap: anywhere; // the non-deprecated form of word-break: break-word
@@ -165,7 +165,7 @@
   padding: 20px 16px;
   text-align: center;
   font-size: 13px;
-  color: var(--text-secondary, #8090a8);
+  color: var(--text-secondary);
 }
 
 // ─── Selected-node bar ────────────────────────────────────────────────────────
@@ -174,8 +174,8 @@
   align-items: center;
   gap: 10px;
   padding: 5px 8px 5px 12px;
-  border-top: 1px solid var(--panel-border, #2f3747);
-  background: var(--panel-header-bg, #1a1f2b);
+  border-top: 1px solid var(--panel-border);
+  background: var(--panel-header-bg);
   font-size: 12px;
   flex-shrink: 0;
   min-width: 0;
@@ -190,7 +190,7 @@
   }
 
   .insp-meta {
-    color: var(--text-secondary, #8090a8);
+    color: var(--text-secondary);
     white-space: nowrap;
     flex-shrink: 0;
   }
@@ -205,10 +205,10 @@
     gap: 4px;
     height: 24px;
     padding: 0 8px;
-    border: 1px solid var(--panel-border, #2f3747);
+    border: 1px solid var(--panel-border);
     border-radius: 4px;
     background: none;
-    color: var(--text-primary, #e0e6f0);
+    color: var(--text-primary);
     font-size: 12px;
     cursor: pointer;
     white-space: nowrap;
@@ -237,8 +237,8 @@
   }
 
   .insp-btn.danger:hover {
-    border-color: #f14e53;
-    color: #f14e53;
+    border-color: var(--color-error);
+    color: var(--color-error);
   }
 
   .insp-btn.primary {
@@ -255,17 +255,17 @@
   }
 
   .form-label {
-    color: var(--text-secondary, #8090a8);
+    color: var(--text-secondary);
     white-space: nowrap;
   }
 
   .form-input {
     height: 24px;
     padding: 0 6px;
-    border: 1px solid var(--panel-border, #2f3747);
+    border: 1px solid var(--panel-border);
     border-radius: 4px;
-    background: var(--app-bg, #1e2430);
-    color: var(--text-primary, #e0e6f0);
+    background: var(--app-bg);
+    color: var(--text-primary);
     font: 12px var(--font-mono);
     outline: none;
     min-width: 0;
@@ -284,7 +284,7 @@
   }
 
   .form-error {
-    color: #f14e53;
+    color: var(--color-error);
     white-space: nowrap;
   }
 }
