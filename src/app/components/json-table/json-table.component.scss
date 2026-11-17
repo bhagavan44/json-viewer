@@ -1,3 +1,5 @@
+@use '../../../styles/mixins' as *;
+
 :host {
   display: flex;
   flex-direction: column;
@@ -27,7 +29,7 @@
     outline: none;
 
     &:focus {
-      border-color: #4a9eff;
+      border-color: var(--accent);
     }
   }
 
@@ -48,9 +50,7 @@
   }
 
   .tb-icon {
-    font-size: 18px;
-    width: 18px;
-    height: 18px;
+    @include icon-size(18px);
     margin-left: 4px;
     color: var(--text-secondary, #8090a8);
     flex-shrink: 0;
@@ -79,13 +79,11 @@
     flex-shrink: 0;
 
     mat-icon {
-      font-size: 17px;
-      width: 17px;
-      height: 17px;
+      @include icon-size(17px);
     }
 
     &:hover:not([disabled]) {
-      background: rgba(74, 158, 255, 0.12);
+      background: rgba(var(--accent-rgb), 0.12);
       color: var(--text-primary, #e0e6f0);
     }
 
@@ -105,7 +103,7 @@
 table {
   border-collapse: separate;
   border-spacing: 0;
-  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  font-family: var(--font-mono);
   font-size: 12.5px;
   color: var(--text-primary, #e0e6f0);
 }
@@ -150,7 +148,7 @@ td.missing {
 }
 
 tbody tr:hover td:not(.idx) {
-  background-color: rgba(74, 158, 255, 0.08);
+  background-color: rgba(var(--accent-rgb), 0.08);
 }
 
 .sort-btn {
@@ -172,15 +170,13 @@ tbody tr:hover td:not(.idx) {
   }
 
   mat-icon {
-    font-size: 14px;
-    width: 14px;
-    height: 14px;
+    @include icon-size(14px);
     flex-shrink: 0;
-    color: #4a9eff;
+    color: var(--accent);
   }
 
   &:hover {
-    color: #4a9eff;
+    color: var(--accent);
   }
 }
 
@@ -201,7 +197,7 @@ tbody tr:hover td:not(.idx) {
   cursor: pointer;
 
   &:hover {
-    border-color: #4a9eff;
+    border-color: var(--accent);
   }
 }
 
@@ -217,9 +213,7 @@ tbody tr:hover td:not(.idx) {
   text-align: center;
 
   mat-icon {
-    font-size: 40px;
-    width: 40px;
-    height: 40px;
+    @include icon-size(40px);
     opacity: 0.6;
   }
 

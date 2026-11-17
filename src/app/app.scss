@@ -1,4 +1,19 @@
 @use '@angular/material' as mat;
+@use '../styles/mixins' as *;
+
+// The 38px bar at the top of a pane, the files sidebar and the side panels.
+@mixin bar-header {
+  display: flex;
+  align-items: center;
+  height: 38px;
+  background: var(--panel-header-bg);
+  border-bottom: 1px solid var(--panel-border);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
 
 // ─── CSS variables ─────────────────────────────────────────────────────────
 :host {
@@ -42,7 +57,7 @@
     --status-bg: #0f1420;
     --status-color: #8090a8;
     --resize-bg: #2a3040;
-    --resize-hover: #4a9eff;
+    --resize-hover: var(--accent);
     --text-primary: #e0e6f0;
     --text-secondary: #8090a8;
     --diff-add: #4caf7d;
@@ -127,7 +142,7 @@
     }
 
     .active-btn {
-      background: rgba(74, 158, 255, 0.15);
+      background: rgba(var(--accent-rgb), 0.15);
     }
 
     button[mat-stroked-button] {
@@ -145,9 +160,7 @@
         align-items: center;
         justify-content: center;
         flex-shrink: 0;
-        font-size: 16px;
-        width: 16px;
-        height: 16px;
+        @include icon-size(16px);
         margin: 0;
       }
 
@@ -213,7 +226,7 @@
     background: var(--panel-bg);
 
     &.active .panel-header {
-      box-shadow: inset 0 2px 0 #4a9eff;
+      box-shadow: inset 0 2px 0 var(--accent);
     }
 
     &.left-panel {
@@ -227,26 +240,15 @@
   }
 
   .panel-header {
-    display: flex;
-    align-items: center;
+    @include bar-header;
     gap: 2px;
     padding: 0 6px 0 12px;
-    height: 38px;
     min-height: 38px;
-    font-size: 12px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
-    color: var(--text-secondary);
-    background: var(--panel-header-bg);
-    border-bottom: 1px solid var(--panel-border);
     flex-shrink: 0;
 
     mat-icon {
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
-      color: #4a9eff;
+      @include icon-size(16px);
+      color: var(--accent);
       flex-shrink: 0;
     }
 
@@ -270,15 +272,13 @@
       flex-shrink: 0;
 
       mat-icon {
-        font-size: 16px;
-        width: 16px;
-        height: 16px;
+        @include icon-size(16px);
         color: inherit;
         line-height: 1;
       }
 
       &:hover {
-        color: #4a9eff;
+        color: var(--accent);
       }
 
       &[disabled] {
@@ -292,17 +292,15 @@
       padding: 1px 6px;
       margin: 0 6px 0 2px;
       border-radius: 4px;
-      background: rgba(74, 158, 255, 0.15);
-      color: #4a9eff;
+      background: rgba(var(--accent-rgb), 0.15);
+      color: var(--accent);
     }
 
     > span.panel-name {
       flex-shrink: 1;
       min-width: 0;
       max-width: 240px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      @include truncate;
       text-transform: none;
       letter-spacing: 0;
       font-size: 13px;
@@ -351,18 +349,16 @@
         }
 
         mat-icon {
-          font-size: 16px;
-          width: 16px;
-          height: 16px;
+          @include icon-size(16px);
         }
 
         &:hover {
-          background: rgba(74, 158, 255, 0.12);
+          background: rgba(var(--accent-rgb), 0.12);
         }
 
         &.on {
-          background: rgba(74, 158, 255, 0.18);
-          color: #4a9eff;
+          background: rgba(var(--accent-rgb), 0.18);
+          color: var(--accent);
         }
       }
     }
@@ -465,7 +461,7 @@
     margin-left: 10px;
     overflow: hidden;
     justify-content: flex-end; // a long path overflows on the left, keeping the current step visible
-    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    font-family: var(--font-mono);
 
     &.hidden {
       display: none;
@@ -494,9 +490,7 @@
 
     .crumb-sep {
       flex-shrink: 0;
-      font-size: 13px;
-      width: 13px;
-      height: 13px;
+      @include icon-size(13px);
       opacity: 0.6;
     }
   }
@@ -517,9 +511,7 @@
     white-space: nowrap;
 
     .status-icon {
-      font-size: 12px;
-      width: 12px;
-      height: 12px;
+      @include icon-size(12px);
     }
 
     &.valid  { color: #4caf7d; }
@@ -534,7 +526,7 @@
     border-radius: 4px;
     background: none;
     font: inherit;
-    color: #4a9eff;
+    color: var(--accent);
     cursor: pointer;
     flex-shrink: 0;
   }
@@ -546,9 +538,7 @@
     background: none;
     font: inherit;
     color: #f14e53;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    @include truncate;
     max-width: 320px;
     cursor: pointer;
 
@@ -561,7 +551,7 @@
     }
 
     &:focus-visible {
-      outline: 2px solid #4a9eff;
+      outline: 2px solid var(--accent);
       outline-offset: 2px;
     }
   }
@@ -603,10 +593,8 @@
     background: var(--panel-header-bg);
 
     mat-icon {
-      color: #4a9eff;
-      font-size: 20px;
-      width: 20px;
-      height: 20px;
+      color: var(--accent);
+      @include icon-size(20px);
     }
   }
 
@@ -642,7 +630,7 @@
       transition: border-color 0.15s;
 
       &:focus {
-        border-color: #4a9eff;
+        border-color: var(--accent);
       }
 
       &::placeholder {
@@ -656,7 +644,7 @@
       flex-shrink: 0;
 
       &:hover {
-        @include mat.icon-button-overrides((icon-color: #4a9eff));
+        @include mat.icon-button-overrides((icon-color: var(--accent)));
       }
     }
   }
@@ -675,9 +663,9 @@
         outlined-outline-color: var(--panel-border),
         outlined-label-text-color: var(--text-secondary),
         filled-container-height: 32px,
-        filled-container-color: #4a9eff,
+        filled-container-color: var(--accent),
         filled-label-text-color: #fff,
-        filled-disabled-container-color: #4a9eff,
+        filled-disabled-container-color: var(--accent),
         filled-disabled-label-text-color: #fff,
         filled-container-shape: 4px,
         filled-label-text-size: 13px,
@@ -703,7 +691,7 @@
       }
 
       &:hover:not([disabled]) {
-        @include mat.button-overrides((filled-container-color: #3a8eef));
+        @include mat.button-overrides((filled-container-color: var(--accent-hover)));
       }
     }
   }
@@ -745,9 +733,7 @@
     cursor: pointer;
 
     mat-icon {
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
+      @include icon-size(16px);
     }
 
     &:hover {
@@ -755,12 +741,12 @@
     }
 
     &.on {
-      background: rgba(74, 158, 255, 0.24);
+      background: rgba(var(--accent-rgb), 0.24);
       color: #fff;
     }
 
     &:focus-visible {
-      outline: 2px solid #4a9eff;
+      outline: 2px solid var(--accent);
       outline-offset: 1px;
     }
   }
@@ -813,10 +799,8 @@
     gap: 6px;
 
     mat-icon {
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
-      color: #4a9eff;
+      @include icon-size(16px);
+      color: var(--accent);
     }
   }
 
@@ -839,7 +823,7 @@
     color: var(--text-secondary);
 
     &:focus-within {
-      border-color: #4a9eff;
+      border-color: var(--accent);
     }
 
     &.invalid {
@@ -847,9 +831,7 @@
     }
 
     mat-icon {
-      font-size: 15px;
-      width: 15px;
-      height: 15px;
+      @include icon-size(15px);
     }
 
     input {
@@ -858,7 +840,7 @@
       outline: none;
       background: none;
       color: var(--text-primary);
-      font: 12px 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+      font: 12px var(--font-mono);
     }
   }
 
@@ -884,14 +866,12 @@
     cursor: pointer;
 
     mat-icon {
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
+      @include icon-size(16px);
     }
 
     &:hover {
-      border-color: #4a9eff;
-      color: #4a9eff;
+      border-color: var(--accent);
+      color: var(--accent);
     }
   }
 }
@@ -911,13 +891,11 @@
     cursor: pointer;
 
     mat-icon {
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
+      @include icon-size(16px);
     }
 
     &:hover {
-      background: rgba(74, 158, 255, 0.12);
+      background: rgba(var(--accent-rgb), 0.12);
     }
   }
 
@@ -948,19 +926,10 @@
   border-left: 1px solid var(--panel-border);
 
   .changes-header {
+    @include bar-header;
     position: sticky;
     top: 0;
-    display: flex;
-    align-items: center;
-    height: 38px;
     padding: 0 12px;
-    background: var(--panel-header-bg);
-    border-bottom: 1px solid var(--panel-border);
-    font-size: 12px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
-    color: var(--text-secondary);
   }
 
   .changes-empty {
@@ -980,15 +949,15 @@
     background: none;
     text-align: left;
     cursor: pointer;
-    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    font-family: var(--font-mono);
     font-size: 11.5px;
 
     &:hover {
-      background: rgba(74, 158, 255, 0.08);
+      background: rgba(var(--accent-rgb), 0.08);
     }
 
     &:focus-visible {
-      outline: 2px solid #4a9eff;
+      outline: 2px solid var(--accent);
       outline-offset: -2px;
     }
 
@@ -1062,33 +1031,22 @@
   }
 
   .files-panel-header {
-    display: flex;
-    align-items: center;
+    @include bar-header;
     gap: 8px;
     padding: 0 6px 0 12px;
-    height: 38px;
     min-height: 38px;
-    background: var(--panel-header-bg);
-    border-bottom: 1px solid var(--panel-border);
-    color: var(--text-secondary);
-    font-size: 12px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
     flex-shrink: 0;
 
     mat-icon {
-      color: #4a9eff;
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
+      color: var(--accent);
+      @include icon-size(16px);
     }
 
     .files-count {
       padding: 0 6px;
       border-radius: 9px;
-      background: rgba(74, 158, 255, 0.15);
-      color: #4a9eff;
+      background: rgba(var(--accent-rgb), 0.15);
+      color: var(--accent);
       letter-spacing: 0;
     }
 
@@ -1104,7 +1062,7 @@
       line-height: 28px;
 
       &:hover {
-        @include mat.icon-button-overrides((icon-color: #4a9eff));
+        @include mat.icon-button-overrides((icon-color: var(--accent)));
       }
     }
   }
@@ -1118,9 +1076,7 @@
     flex-shrink: 0;
 
     .search-icon {
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
+      @include icon-size(18px);
       color: var(--text-secondary);
       flex-shrink: 0;
     }
@@ -1139,7 +1095,7 @@
       transition: border-color 0.15s;
 
       &:focus {
-        border-color: #4a9eff;
+        border-color: var(--accent);
       }
 
       &::placeholder {
@@ -1160,9 +1116,7 @@
       flex-shrink: 0;
 
       mat-icon {
-        font-size: 16px;
-        width: 16px;
-        height: 16px;
+        @include icon-size(16px);
       }
     }
   }
@@ -1184,9 +1138,7 @@
     text-align: center;
 
     mat-icon {
-      font-size: 40px;
-      width: 40px;
-      height: 40px;
+      @include icon-size(40px);
       opacity: 0.35;
     }
 
@@ -1204,12 +1156,12 @@
     transition: background 0.12s;
 
     &:hover {
-      background: rgba(74, 158, 255, 0.07);
+      background: rgba(var(--accent-rgb), 0.07);
     }
 
     &.active {
-      background: rgba(74, 158, 255, 0.12);
-      box-shadow: inset 3px 0 0 #4a9eff;
+      background: rgba(var(--accent-rgb), 0.12);
+      box-shadow: inset 3px 0 0 var(--accent);
     }
 
     .file-item-main {
@@ -1220,10 +1172,8 @@
       min-width: 0;
 
       .file-icon {
-        font-size: 15px;
-        width: 15px;
-        height: 15px;
-        color: #4a9eff;
+        @include icon-size(15px);
+        color: var(--accent);
         flex-shrink: 0;
         opacity: 0.8;
       }
@@ -1232,9 +1182,7 @@
         font-size: 13px;
         font-weight: 500;
         color: var(--text-primary);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        @include truncate;
         min-width: 0;
       }
 
@@ -1242,8 +1190,8 @@
         flex-shrink: 0;
         padding: 0 5px;
         border-radius: 4px;
-        background: rgba(74, 158, 255, 0.2);
-        color: #4a9eff;
+        background: rgba(var(--accent-rgb), 0.2);
+        color: var(--accent);
         font-size: 10px;
         font-weight: 700;
         line-height: 16px;
@@ -1293,14 +1241,12 @@
       cursor: pointer;
 
       mat-icon {
-        font-size: 15px;
-        width: 15px;
-        height: 15px;
+        @include icon-size(15px);
       }
 
       &:hover {
-        color: #4a9eff;
-        border-color: rgba(74, 158, 255, 0.5);
+        color: var(--accent);
+        border-color: rgba(var(--accent-rgb), 0.5);
       }
 
       &.pane-open {
@@ -1313,7 +1259,7 @@
       }
 
       &:focus-visible {
-        outline: 2px solid #4a9eff;
+        outline: 2px solid var(--accent);
         outline-offset: 1px;
       }
     }
@@ -1323,7 +1269,7 @@
       height: 26px;
       padding: 0 8px;
       background: var(--app-bg);
-      border: 1px solid #4a9eff;
+      border: 1px solid var(--accent);
       border-radius: 4px;
       color: var(--text-primary);
       font-size: 13px;
@@ -1380,7 +1326,7 @@
   justify-content: center;
   gap: 6px;
   margin: 6px;
-  border: 2px dashed #4a9eff;
+  border: 2px dashed var(--accent);
   border-radius: 10px;
   background: rgba(30, 36, 48, 0.88);
   color: #e0e6f0;
@@ -1391,10 +1337,8 @@
   pointer-events: none;
 
   mat-icon {
-    font-size: 36px;
-    width: 36px;
-    height: 36px;
-    color: #4a9eff;
+    @include icon-size(36px);
+    color: var(--accent);
   }
 
   small {

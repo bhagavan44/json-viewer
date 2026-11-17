@@ -1,3 +1,5 @@
+@use '../../../styles/mixins' as *;
+
 :host {
   display: flex;
   flex-direction: column;
@@ -17,9 +19,7 @@
   flex-shrink: 0;
 
   .tb-icon {
-    font-size: 18px;
-    width: 18px;
-    height: 18px;
+    @include icon-size(18px);
     color: var(--text-secondary, #8090a8);
     flex-shrink: 0;
   }
@@ -37,7 +37,7 @@
     outline: none;
 
     &:focus {
-      border-color: #4a9eff;
+      border-color: var(--accent);
     }
 
     &::placeholder {
@@ -74,19 +74,17 @@
     flex-shrink: 0;
 
     mat-icon {
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
+      @include icon-size(18px);
     }
 
     &:hover:not([disabled]) {
-      background: rgba(74, 158, 255, 0.12);
-      color: #4a9eff;
+      background: rgba(var(--accent-rgb), 0.12);
+      color: var(--accent);
     }
 
     &.on {
-      background: rgba(74, 158, 255, 0.2);
-      color: #4a9eff;
+      background: rgba(var(--accent-rgb), 0.2);
+      color: var(--accent);
     }
 
     &[disabled] {
@@ -95,7 +93,7 @@
     }
 
     &:focus-visible {
-      outline: 2px solid #4a9eff;
+      outline: 2px solid var(--accent);
       outline-offset: 1px;
     }
   }
@@ -115,7 +113,7 @@
   outline: none;
 
   &:focus-visible {
-    box-shadow: inset 0 0 0 1px #4a9eff;
+    box-shadow: inset 0 0 0 1px var(--accent);
   }
 }
 
@@ -133,9 +131,7 @@
   text-align: center;
 
   mat-icon {
-    font-size: 48px;
-    width: 48px;
-    height: 48px;
+    @include icon-size(48px);
   }
 
   p {
@@ -185,8 +181,8 @@
   min-width: 0;
 
   .insp-path {
-    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
-    color: #4a9eff;
+    font-family: var(--font-mono);
+    color: var(--accent);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -219,18 +215,16 @@
     flex-shrink: 0;
 
     mat-icon {
-      font-size: 14px;
-      width: 14px;
-      height: 14px;
+      @include icon-size(14px);
     }
 
     &:hover {
-      border-color: #4a9eff;
-      color: #4a9eff;
+      border-color: var(--accent);
+      color: var(--accent);
     }
 
     &:focus-visible {
-      outline: 2px solid #4a9eff;
+      outline: 2px solid var(--accent);
       outline-offset: 1px;
     }
   }
@@ -248,8 +242,8 @@
   }
 
   .insp-btn.primary {
-    border-color: #4a9eff;
-    color: #4a9eff;
+    border-color: var(--accent);
+    color: var(--accent);
   }
 
   .edit-form {
@@ -272,12 +266,12 @@
     border-radius: 4px;
     background: var(--app-bg, #1e2430);
     color: var(--text-primary, #e0e6f0);
-    font: 12px 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    font: 12px var(--font-mono);
     outline: none;
     min-width: 0;
 
     &:focus {
-      border-color: #4a9eff;
+      border-color: var(--accent);
     }
 
     &.key {

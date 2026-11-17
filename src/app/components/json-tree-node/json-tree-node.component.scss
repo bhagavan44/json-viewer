@@ -1,3 +1,5 @@
+@use '../../../styles/mixins' as *;
+
 // ─── Tree node host ─────────────────────────────────────────────────────────
 :host {
   display: block;
@@ -21,14 +23,14 @@
   gap: 2px;
 
   &:hover {
-    background: rgba(74, 158, 255, 0.07);
+    background: rgba(var(--accent-rgb), 0.07);
   }
 
   &.leaf {
     cursor: default;
 
     &:hover {
-      background: rgba(74, 158, 255, 0.04);
+      background: rgba(var(--accent-rgb), 0.04);
     }
   }
 }
@@ -47,9 +49,7 @@
   transition: transform 0.15s ease, color 0.15s;
 
   mat-icon {
-    font-size: 18px;
-    width: 18px;
-    height: 18px;
+    @include icon-size(18px);
     transition: transform 0.15s ease;
   }
 
@@ -58,8 +58,8 @@
   }
 
   &:hover {
-    color: #4a9eff;
-    background: rgba(74, 158, 255, 0.12);
+    color: var(--accent);
+    background: rgba(var(--accent-rgb), 0.12);
   }
 }
 
@@ -106,15 +106,13 @@
   color: #6b7a8d;
   font-size: 12px;
   max-width: 300px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  @include truncate;
   cursor: pointer;
 }
 
 .item-count {
-  background: rgba(74, 158, 255, 0.15);
-  color: #4a9eff;
+  background: rgba(var(--accent-rgb), 0.15);
+  color: var(--accent);
   font-size: 10px;
   font-weight: 600;
   padding: 1px 5px;
@@ -143,8 +141,8 @@
 // ─── Selection, search and diff states (declared after :hover so they win) ──
 .node-row {
   &.selected {
-    background: rgba(74, 158, 255, 0.16);
-    box-shadow: inset 2px 0 0 #4a9eff;
+    background: rgba(var(--accent-rgb), 0.16);
+    box-shadow: inset 2px 0 0 var(--accent);
   }
 
   // Rows matched by a JSONPath (plain-text matches are highlighted inside the text instead).
@@ -167,7 +165,7 @@
 }
 
 @keyframes row-flash {
-  0%, 60% { outline: 2px solid #4a9eff; outline-offset: -2px; }
+  0%, 60% { outline: 2px solid var(--accent); outline-offset: -2px; }
   100% { outline: 2px solid transparent; outline-offset: -2px; }
 }
 

@@ -15,6 +15,15 @@ html {
   );
 }
 
+// App-wide tokens, the same in both themes. Theme-specific colours live on `.app-container`
+// (app.scss). Defined on :root so Material overlays (menus, tooltips) can use them too.
+:root {
+  --accent: #4a9eff;
+  --accent-rgb: 74, 158, 255; // for tints: rgba(var(--accent-rgb), 0.15)
+  --accent-hover: #3a8eef;
+  --font-mono: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+}
+
 body {
   color-scheme: light dark;
   background-color: var(--mat-sys-surface);

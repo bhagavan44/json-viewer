@@ -55,7 +55,7 @@
     cursor: pointer;
 
     &.active {
-      background: rgba(74, 158, 255, 0.16);
+      background: rgba(var(--accent-rgb), 0.16);
     }
 
     .group {
@@ -79,8 +79,8 @@
       flex: none;
       padding: 0 6px;
       border-radius: 4px;
-      background: rgba(74, 158, 255, 0.15);
-      color: #4a9eff;
+      background: rgba(var(--accent-rgb), 0.15);
+      color: var(--accent);
       font-size: 11px;
     }
   }

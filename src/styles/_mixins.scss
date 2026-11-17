@@ -1,0 +1,16 @@
+// Shared SCSS mixins. Use from a component stylesheet with
+// `@use '<relative path>/styles/mixins' as *;`.
+
+// A square glyph (usually a mat-icon): the font size and the box match.
+@mixin icon-size($size) {
+  font-size: $size;
+  width: $size;
+  height: $size;
+}
+
+// One line of text, cut with an ellipsis.
+@mixin truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
