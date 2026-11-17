@@ -61,7 +61,8 @@ expected today and are not failures; don't treat them as a regression unless the
   through plain `JSON.parse` / `JSON.stringify` in those paths.
 - **Edits keep the user's formatting.** `utils/json-edit.ts` changes only the edited part of the
   text. Don't replace that with re-serialising the whole document.
-- **Header buttons** are styled in `app.scss` under `.app-header .header-actions` through
+- **Header buttons** are styled in `components/app-header/app-header.component.scss` under
+  `.app-header .header-actions` through
   Material's token mixins. `mat-toolbar` resets the outlined-button text colour on each button, so
   that token is set on the button itself. Check the result visually after changing them, including
   the narrow layout (below 768px, labels are hidden).

@@ -1,56 +1,16 @@
 <div class="app-container" [class.dark]="isDarkTheme" [class.dragging]="isDragging">
 
-  <!-- Header toolbar -->
-  <mat-toolbar class="app-header">
-    <div class="header-logo">
-      <img class="logo-icon" src="favicon.svg" alt="" width="28" height="28">
-      <span class="app-title">JSON Viewer</span>
-    </div>
-    <div class="view-seg" role="group" aria-label="View mode">
-      <button type="button" [class.on]="viewMode === 'edit'" [attr.aria-pressed]="viewMode === 'edit'" (click)="setViewMode('edit')">
-        <mat-icon>view_column</mat-icon><span>Workspace</span>
-      </button>
-      <button type="button" [class.on]="viewMode === 'compare'" [attr.aria-pressed]="viewMode === 'compare'" (click)="setViewMode('compare')">
-        <mat-icon>compare_arrows</mat-icon><span>Compare</span>
-      </button>
-    </div>
-    <span class="flex-spacer"></span>
-    <div class="header-actions">
-      <button mat-stroked-button [matMenuTriggerFor]="shareMenu" matTooltip="Copy a link that opens both panes">
-        <mat-icon>link</mat-icon>
-        <span class="btn-label">Share</span>
-      </button>
-      <mat-menu #shareMenu="matMenu">
-        <button mat-menu-item (click)="shareLink()">
-          <mat-icon>link</mat-icon><span>Copy share link</span>
-        </button>
-        <button mat-menu-item (click)="shareLink(true)">
-          <mat-icon>visibility_off</mat-icon><span>Copy link, hiding sensitive values</span>
-        </button>
-      </mat-menu>
-      <button mat-stroked-button (click)="openPalette()" matTooltip="Search every action (Ctrl/Cmd+K)">
-        <mat-icon>bolt</mat-icon>
-        <span class="btn-label">Actions</span>
-      </button>
-      <button mat-stroked-button
-        (click)="toggleFilesPanel()"
-        matTooltip="Show or hide saved files"
-        [class.active-btn]="showFilesPanel">
-        <mat-icon
-          [matBadge]="savedFiles.length"
-          [matBadgeHidden]="savedFiles.length === 0"
-          matBadgeSize="small"
-          matBadgeColor="accent">folder_open</mat-icon>
-        <span class="btn-label">Files</span>
-      </button>
-      <button mat-icon-button
-        (click)="toggleTheme()"
-        [matTooltip]="isDarkTheme ? 'Switch to light theme' : 'Switch to dark theme'"
-        class="theme-toggle">
-        <mat-icon>{{ isDarkTheme ? 'light_mode' : 'dark_mode' }}</mat-icon>
-      </button>
-    </div>
-  </mat-toolbar>
+  <app-header
+    [viewMode]="viewMode"
+    (viewModeChange)="setViewMode($event)"
+    [dark]="isDarkTheme"
+    [filesOpen]="showFilesPanel"
+    [fileCount]="savedFiles.length"
+    (share)="shareLink($event)"
+    (openPalette)="openPalette()"
+    (toggleFiles)="toggleFilesPanel()"
+    (toggleTheme)="toggleTheme()">
+  </app-header>
 
   <input #fileInput type="file" class="file-input" accept=".json,.txt,application/json,text/plain" multiple
     aria-hidden="true" tabindex="-1" (change)="onFilesPicked($event)">

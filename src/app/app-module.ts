@@ -20,6 +20,7 @@ import { CommandPaletteComponent } from './components/command-palette/command-pa
 import { JsonTableComponent } from './components/json-table/json-table.component';
 import { SaveDialogComponent } from './components/save-dialog/save-dialog.component';
 import { FilesPanelComponent } from './components/files-panel/files-panel.component';
+import { AppHeaderComponent } from './components/app-header/app-header.component';
 
 import { inject } from "@vercel/analytics"
 inject();
@@ -34,6 +35,7 @@ inject();
     JsonTableComponent,
     SaveDialogComponent,
     FilesPanelComponent,
+    AppHeaderComponent,
   ],
   imports: [
     BrowserModule,
