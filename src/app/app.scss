@@ -1286,6 +1286,7 @@
     .panel.left-panel,
     .panel.right-panel {
       // !important beats the inline flex-basis left behind by a desktop drag-resize.
+      // stylelint-disable-next-line declaration-no-important
       flex: 1 1 0 !important;
       min-width: 0;
       min-height: 0;

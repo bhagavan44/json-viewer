@@ -157,7 +157,7 @@
     color: #f14e53;
     opacity: 0.8;
     max-width: 300px;
-    word-break: break-word;
+    overflow-wrap: anywhere; // the non-deprecated form of word-break: break-word
   }
 }
 
