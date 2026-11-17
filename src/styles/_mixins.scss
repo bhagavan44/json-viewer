@@ -23,6 +23,14 @@
   letter-spacing: 0.8px;
 }
 
+// Centre a mat-icon in an icon button. Material pads the button to centre the icon, but a
+// line-height taller than the icon pushes it down, so centre with flex instead.
+@mixin center-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 // One line of text, cut with an ellipsis.
 @mixin truncate {
   overflow: hidden;

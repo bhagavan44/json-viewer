@@ -110,9 +110,7 @@
     }
 
     .theme-toggle {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
+      @include center-icon;
       margin-left: 4px;
 
       mat-icon {

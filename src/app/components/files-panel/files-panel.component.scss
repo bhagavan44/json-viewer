@@ -67,7 +67,7 @@
           icon-color: var(--text-secondary),
         )
       );
-      line-height: 28px;
+      @include center-icon;
 
       &:hover {
         @include mat.icon-button-overrides((icon-color: var(--accent)));
@@ -120,7 +120,7 @@
           icon-color: var(--text-secondary),
         )
       );
-      line-height: 24px;
+      @include center-icon;
       flex-shrink: 0;
 
       mat-icon {

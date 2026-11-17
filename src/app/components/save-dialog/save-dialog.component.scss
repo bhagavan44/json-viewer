@@ -80,6 +80,7 @@
 
     .dice-btn {
       @include mat.icon-button-overrides((icon-color: var(--text-secondary)));
+      @include center-icon;
       flex-shrink: 0;
 
       &:hover {

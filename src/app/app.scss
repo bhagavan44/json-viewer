@@ -119,7 +119,7 @@
           icon-size: 16px,
         )
       );
-      line-height: 28px;
+      @include center-icon;
       flex-shrink: 0;
 
       mat-icon {
