@@ -1,0 +1,28 @@
+<div class="save-dialog-overlay" (click)="cancelled.emit()">
+  <div class="save-dialog" (click)="$event.stopPropagation()">
+    <div class="save-dialog-header">
+      <mat-icon>save</mat-icon>
+      <span>Save JSON</span>
+    </div>
+    <div class="save-dialog-body">
+      <label class="save-label">File name</label>
+      <div class="save-input-row">
+        <input
+          class="save-input"
+          [ngModel]="name"
+          (ngModelChange)="nameChange.emit($event)"
+          placeholder="Enter file name…"
+          (keydown.enter)="confirmed.emit()"
+          (keydown.escape)="cancelled.emit()"
+          autofocus>
+        <button mat-icon-button (click)="randomName.emit()" matTooltip="Generate random name" class="dice-btn">
+          <mat-icon>casino</mat-icon>
+        </button>
+      </div>
+    </div>
+    <div class="save-dialog-actions">
+      <button mat-stroked-button (click)="cancelled.emit()">Cancel</button>
+      <button mat-flat-button (click)="confirmed.emit()" [disabled]="!name.trim()" class="save-confirm-btn">Save</button>
+    </div>
+  </div>
+</div>

@@ -57,34 +57,12 @@
 
   <app-command-palette *ngIf="showPalette" [commands]="paletteCommands" (closed)="closePalette()"></app-command-palette>
 
-  <!-- Save Dialog -->
-  <div class="save-dialog-overlay" *ngIf="showSaveDialog" (click)="cancelSave()">
-    <div class="save-dialog" (click)="$event.stopPropagation()">
-      <div class="save-dialog-header">
-        <mat-icon>save</mat-icon>
-        <span>Save JSON</span>
-      </div>
-      <div class="save-dialog-body">
-        <label class="save-label">File name</label>
-        <div class="save-input-row">
-          <input
-            class="save-input"
-            [(ngModel)]="saveFileName"
-            placeholder="Enter file name…"
-            (keydown.enter)="confirmSave()"
-            (keydown.escape)="cancelSave()"
-            autofocus>
-          <button mat-icon-button (click)="saveFileName = generateRandomName()" matTooltip="Generate random name" class="dice-btn">
-            <mat-icon>casino</mat-icon>
-          </button>
-        </div>
-      </div>
-      <div class="save-dialog-actions">
-        <button mat-stroked-button (click)="cancelSave()">Cancel</button>
-        <button mat-flat-button (click)="confirmSave()" [disabled]="!saveFileName.trim()" class="save-confirm-btn">Save</button>
-      </div>
-    </div>
-  </div>
+  <app-save-dialog *ngIf="showSaveDialog"
+    [(name)]="saveFileName"
+    (randomName)="saveFileName = generateRandomName()"
+    (confirmed)="confirmSave()"
+    (cancelled)="cancelSave()">
+  </app-save-dialog>
 
   <div class="workspace">
 

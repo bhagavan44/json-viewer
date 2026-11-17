@@ -18,6 +18,7 @@ import { JsonTreeComponent } from './components/json-tree/json-tree.component';
 import { JsonTreeNodeComponent } from './components/json-tree-node/json-tree-node.component';
 import { CommandPaletteComponent } from './components/command-palette/command-palette.component';
 import { JsonTableComponent } from './components/json-table/json-table.component';
+import { SaveDialogComponent } from './components/save-dialog/save-dialog.component';
 
 import { inject } from "@vercel/analytics"
 inject();
@@ -30,6 +31,7 @@ inject();
     JsonTreeNodeComponent,
     CommandPaletteComponent,
     JsonTableComponent,
+    SaveDialogComponent,
   ],
   imports: [
     BrowserModule,
