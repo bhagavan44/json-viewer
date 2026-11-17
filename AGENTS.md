@@ -17,10 +17,11 @@ npm start                       # dev server, http://localhost:4200
 npm run build                   # production build -> dist/json-viewer/browser
 npm test                        # unit tests (Vitest, watch mode)
 npx ng test --watch=false       # unit tests once, as CI runs them
+npm run lint:styles             # Stylelint over src/**/*.scss
 ```
 
-Before calling a task done, run the tests and the production build. CI runs both on every PR and on
-pushes to `main`. There is no linter configured.
+Before calling a task done, run the tests and the production build, and `npm run lint:styles` if
+you changed a stylesheet. CI runs the tests and the build on every PR and on pushes to `main`.
 
 The build prints bundle-size budget warnings for the initial bundle and `app.scss`. They are
 expected today and are not failures; don't treat them as a regression unless the build errors.
@@ -40,6 +41,11 @@ expected today and are not failures; don't treat them as a regression unless the
 - Formatting follows `.prettierrc` (100 columns, single quotes) and `.editorconfig` (2 spaces, final
   newline, no trailing whitespace). Some existing files aren't fully formatted, so don't reformat code you aren't
   changing.
+- **Styles:** use the tokens in `src/styles.scss` (`--accent`, `rgba(var(--accent-rgb), …)`,
+  `--accent-hover`, `--font-mono`) and the theme colours on `.app-container` in `app.scss`, not
+  raw hex values. Shared mixins (`icon-size()`, `truncate`) are in `src/styles/_mixins.scss`.
+  Customise Material with its `mat.*-overrides()` token mixins, not `!important`. Stylelint
+  enforces the last two rules.
 - Use the existing code style, naming and folder structure. Don't introduce new patterns without
   discussing it first.
 
@@ -54,9 +60,10 @@ expected today and are not failures; don't treat them as a regression unless the
   through plain `JSON.parse` / `JSON.stringify` in those paths.
 - **Edits keep the user's formatting.** `utils/json-edit.ts` changes only the edited part of the
   text. Don't replace that with re-serialising the whole document.
-- **Header buttons** are styled in `app.scss` under `.app-header .header-actions` and override
-  Material with `!important`. Check the result visually after changing them, including the narrow
-  layout (below 768px, labels are hidden).
+- **Header buttons** are styled in `app.scss` under `.app-header .header-actions` through
+  Material's token mixins. `mat-toolbar` resets the outlined-button text colour on each button, so
+  that token is set on the button itself. Check the result visually after changing them, including
+  the narrow layout (below 768px, labels are hidden).
 
 ## Testing
 

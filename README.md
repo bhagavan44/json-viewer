@@ -104,6 +104,7 @@ npm ci
 npm start          # dev server at http://localhost:4200
 npm run build      # production build in dist/json-viewer/browser (static files)
 npm test           # unit tests (Vitest)
+npm run lint:styles   # Stylelint over the SCSS
 ```
 
 CI (`.github/workflows/ci.yml`) runs the unit tests and the production build on every pull request and on pushes to `main`.
