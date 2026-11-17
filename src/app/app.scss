@@ -555,20 +555,6 @@
     }
   }
 
-  .stat-file-icon {
-    font-size: 12px;
-    width: 12px;
-    height: 12px;
-    vertical-align: middle;
-  }
-
-  .stat-filename {
-    max-width: 120px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
   .stat-sep {
     color: rgba(128, 128, 128, 0.4);
   }
@@ -1323,24 +1309,6 @@
       outline: none;
     }
   }
-}
-
-// ─── Status bar file name ────────────────────────────────────────────────────
-.stat-file-icon {
-  font-size: 12px !important;
-  width: 12px !important;
-  height: 12px !important;
-  color: #4a9eff;
-  vertical-align: middle;
-  margin-right: 3px;
-}
-
-.stat-filename {
-  color: #4a9eff !important;
-  max-width: 140px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 // ─── Phones: stack the panes so each gets the full width ─────────────────────
