@@ -68,72 +68,23 @@
 
     <!-- Files sidebar (overlay drawer on narrow screens) -->
     <div class="files-panel-backdrop" *ngIf="showFilesPanel && isNarrow" (click)="closeFilesPanel()"></div>
-    <aside class="files-panel" [class.open]="showFilesPanel" aria-label="Saved files">
-      <div class="files-panel-header">
-        <mat-icon>folder_open</mat-icon>
-        <span>Saved files</span>
-        <span class="files-count">{{ savedFiles.length }}</span>
-        <span class="flex-spacer"></span>
-        <button mat-icon-button (click)="closeFilesPanel()" class="sm-btn close-btn" matTooltip="Hide sidebar" aria-label="Hide saved files">
-          <mat-icon>close</mat-icon>
-        </button>
-      </div>
-      <div class="files-search">
-        <mat-icon class="search-icon">search</mat-icon>
-        <input
-          class="search-input"
-          [(ngModel)]="fileSearchQuery"
-          placeholder="Search names and contents…"
-          aria-label="Search saved files">
-        <button mat-icon-button *ngIf="fileSearchQuery" (click)="fileSearchQuery = ''" class="sm-btn clear-search-btn" aria-label="Clear file search">
-          <mat-icon>clear</mat-icon>
-        </button>
-      </div>
-      <div class="files-list">
-        <div *ngIf="filteredFiles.length === 0" class="files-empty">
-          <mat-icon>inbox</mat-icon>
-          <span>{{ fileSearchQuery ? 'No files match' : 'No saved files yet' }}</span>
-          <small *ngIf="!fileSearchQuery">Paste JSON and press Save to keep it here</small>
-        </div>
-        <div *ngFor="let file of filteredFiles"
-             class="file-item"
-             [class.active]="isOpenIn(file, left) || isOpenIn(file, right)"
-             (click)="loadFile(file)">
-          <div class="file-item-main">
-            <ng-container *ngIf="renamingFileId === file.id; else nameDisplay">
-              <input
-                class="rename-input"
-                [(ngModel)]="renameValue"
-                (keydown.enter)="confirmRename(file.id)"
-                (keydown.escape)="cancelRename()"
-                (blur)="confirmRename(file.id)"
-                (click)="$event.stopPropagation()"
-                autofocus>
-            </ng-container>
-            <ng-template #nameDisplay>
-              <mat-icon class="file-icon">insert_drive_file</mat-icon>
-              <span class="file-name">{{ file.name }}</span>
-              <span class="pane-badge" *ngIf="isOpenIn(file, left)" matTooltip="Open in the left pane">L</span>
-              <span class="pane-badge" *ngIf="isOpenIn(file, right)" matTooltip="Open in the right pane">R</span>
-            </ng-template>
-          </div>
-          <div class="file-item-meta">
-            <span class="file-date">{{ formatDate(file.savedAt) }}</span>
-            <span class="file-size">{{ fileSize(file) }}</span>
-          </div>
-          <div class="file-item-actions" (click)="$event.stopPropagation()">
-            <button type="button" class="act-btn pane-open" (click)="openFileIn(file, left, $event)" matTooltip="Open in left pane" aria-label="Open in left pane">L</button>
-            <button type="button" class="act-btn pane-open" (click)="openFileIn(file, right, $event)" matTooltip="Open in right pane" aria-label="Open in right pane">R</button>
-            <button type="button" class="act-btn" (click)="startRename(file, $event)" matTooltip="Rename" aria-label="Rename file">
-              <mat-icon>edit</mat-icon>
-            </button>
-            <button type="button" class="act-btn delete-btn" (click)="deleteFile(file.id, $event)" matTooltip="Delete" aria-label="Delete file">
-              <mat-icon>delete_outline</mat-icon>
-            </button>
-          </div>
-        </div>
-      </div>
-    </aside>
+    <app-files-panel
+      [open]="showFilesPanel"
+      [files]="filteredFiles"
+      [total]="savedFiles.length"
+      [(query)]="fileSearchQuery"
+      [leftFileId]="left.currentFileId"
+      [rightFileId]="right.currentFileId"
+      [renamingId]="renamingFileId"
+      [(renameValue)]="renameValue"
+      (closed)="closeFilesPanel()"
+      (fileOpen)="loadFile($event)"
+      (fileOpenIn)="openFileIn($event.file, $event.side === 'left' ? left : right)"
+      (renameStart)="startRename($event)"
+      (renameConfirm)="confirmRename($event)"
+      (renameCancel)="cancelRename()"
+      (fileDelete)="deleteFile($event.id)">
+    </app-files-panel>
 
     <div class="main">
 

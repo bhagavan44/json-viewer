@@ -1210,7 +1210,6 @@ export class App implements DoCheck, OnDestroy {
   // The footer and file list are read on every render; these memos keep a large
   // document from being re-encoded or re-scanned each time.
   private textStats = new Map<PanelState, { text: string; bytes: number; lines: number }>();
-  private fileSizes = new WeakMap<SavedFile, string>();
   private fileFilter: { files: SavedFile[]; query: string; result: SavedFile[] } | null = null;
 
   private stats(panel: PanelState): { bytes: number; lines: number } {
@@ -1346,8 +1345,8 @@ export class App implements DoCheck, OnDestroy {
     return panel.currentFileId === file.id;
   }
 
-  async deleteFile(id: string, event: MouseEvent): Promise<void> {
-    event.stopPropagation();
+  async deleteFile(id: string, event?: MouseEvent): Promise<void> {
+    event?.stopPropagation();
     const file = this.savedFiles.find(f => f.id === id);
     if (!file) return;
     try {
@@ -1379,8 +1378,8 @@ export class App implements DoCheck, OnDestroy {
     this.cdr.markForCheck();
   }
 
-  startRename(file: SavedFile, event: MouseEvent): void {
-    event.stopPropagation();
+  startRename(file: SavedFile, event?: MouseEvent): void {
+    event?.stopPropagation();
     this.renamingFileId = file.id;
     this.renameValue = file.name;
   }
@@ -1403,17 +1402,5 @@ export class App implements DoCheck, OnDestroy {
 
   cancelRename(): void {
     this.renamingFileId = null;
-  }
-
-  fileSize(file: SavedFile): string {
-    let size = this.fileSizes.get(file);
-    if (size === undefined) this.fileSizes.set(file, (size = formatBytes(byteLength(file.content))));
-    return size;
-  }
-
-  formatDate(ts: number): string {
-    const d = new Date(ts);
-    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' ' +
-           d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
   }
 }

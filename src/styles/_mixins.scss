@@ -8,6 +8,21 @@
   height: $size;
 }
 
+// The 38px bar at the top of a pane, the files sidebar and the side panels. Uses the theme
+// colours defined on `.app-container`.
+@mixin bar-header {
+  display: flex;
+  align-items: center;
+  height: 38px;
+  background: var(--panel-header-bg);
+  border-bottom: 1px solid var(--panel-border);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
 // One line of text, cut with an ellipsis.
 @mixin truncate {
   overflow: hidden;

@@ -19,6 +19,7 @@ import { JsonTreeNodeComponent } from './components/json-tree-node/json-tree-nod
 import { CommandPaletteComponent } from './components/command-palette/command-palette.component';
 import { JsonTableComponent } from './components/json-table/json-table.component';
 import { SaveDialogComponent } from './components/save-dialog/save-dialog.component';
+import { FilesPanelComponent } from './components/files-panel/files-panel.component';
 
 import { inject } from "@vercel/analytics"
 inject();
@@ -32,6 +33,7 @@ inject();
     CommandPaletteComponent,
     JsonTableComponent,
     SaveDialogComponent,
+    FilesPanelComponent,
   ],
   imports: [
     BrowserModule,
