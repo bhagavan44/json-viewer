@@ -5,7 +5,7 @@ features, the file layout and the main gotchas, so read it first and don't dupli
 
 ## What this is
 
-A browser-only JSON viewer, editor and comparer. Angular 21, Angular Material and Monaco. There is
+A browser-only JSON viewer, editor and comparer. Angular 22, Angular Material and Monaco. There is
 no backend: nothing is uploaded, saved files live in the browser, and share links are encoded into
 the URL hash. Keep it that way.
 

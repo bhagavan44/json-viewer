@@ -2,7 +2,7 @@
 
 A browser-based workspace for reading, editing, searching and comparing JSON. Two panes sit side by side. Each one can be a code editor, a tree or a table, so you can look at two documents at once, find things in them, and see exactly what differs. Everything runs in the browser; nothing is uploaded.
 
-Built with Angular 21, Angular Material and the Monaco editor.
+Built with Angular 22, Angular Material and the Monaco editor.
 
 ## What it does
 
@@ -153,7 +153,7 @@ src/app/
 
 ### Things to know
 
-- **The app runs without zone.js** (the Angular 21 default). State changed inside a promise or timer is not rendered until something calls `markForCheck()`, so call it after async updates.
+- **The app runs without zone.js** (the Angular 22 default). State changed inside a promise or timer is not rendered until something calls `markForCheck()`, so call it after async updates.
 - The tree renders only the rows in view (CDK virtual scroll), so every row must be exactly `TREE_ROW_HEIGHT` px tall (`json-tree.component.ts` and `json-tree-node.component.scss`).
 - Node paths use one format everywhere (`$`, `$.items[1].qty`, `$["a b"]`): the tree, the diff, JSONPath results and "Copy path" all share `childPath()` in `json-utils.ts`.
 
