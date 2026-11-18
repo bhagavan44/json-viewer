@@ -6,7 +6,6 @@ import {
   HostListener,
   OnDestroy,
   ViewChild,
-  ChangeDetectionStrategy,
 } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { DiffEntry, DiffKind, DiffResult, diffJson } from './utils/json-diff';
@@ -175,7 +174,6 @@ const MAX_OPEN_BYTES = 25 * 1024 * 1024;
   selector: 'app-root',
   standalone: false,
   templateUrl: './app.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './app.scss',
 })
 export class App implements DoCheck, OnDestroy {

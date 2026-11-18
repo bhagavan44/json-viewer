@@ -1,4 +1,8 @@
-import { NgModule, provideBrowserGlobalErrorListeners } from '@angular/core';
+import {
+  NgModule,
+  provideBrowserGlobalErrorListeners,
+  provideZonelessChangeDetection,
+} from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { FormsModule } from '@angular/forms';
@@ -55,6 +59,8 @@ inject();
   ],
   providers: [
     provideBrowserGlobalErrorListeners(),
+    // No zone.js: rendering is driven by signals, template events and markForCheck().
+    provideZonelessChangeDetection(),
   ],
   bootstrap: [App]
 })
