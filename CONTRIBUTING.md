@@ -18,7 +18,7 @@ browser and share links are encoded into the URL hash. Contributions need to kee
 
 ## Getting started
 
-You need Node.js 22 (the version CI uses) and npm.
+You need Node.js 26 (the version CI uses) and npm.
 
 ```bash
 git clone https://github.com/<your-username>/json-viewer.git
