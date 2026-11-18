@@ -1,4 +1,13 @@
-import { AfterViewInit, Component, ElementRef, EventEmitter, Input, Output, ViewChild } from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  EventEmitter,
+  Input,
+  Output,
+  ViewChild,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 
 export interface PaletteCommand {
   id: string;
@@ -13,6 +22,7 @@ export interface PaletteCommand {
   selector: 'app-command-palette',
   standalone: false,
   templateUrl: './command-palette.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './command-palette.component.scss',
 })
 export class CommandPaletteComponent implements AfterViewInit {
@@ -46,7 +56,9 @@ export class CommandPaletteComponent implements AfterViewInit {
     event.preventDefault();
     if (!this.results.length) return;
     this.active = (this.active + delta + this.results.length) % this.results.length;
-    setTimeout(() => document.getElementById('palette-opt-' + this.active)?.scrollIntoView({ block: 'nearest' }));
+    setTimeout(() =>
+      document.getElementById('palette-opt-' + this.active)?.scrollIntoView({ block: 'nearest' }),
+    );
   }
 
   runActive(): void {

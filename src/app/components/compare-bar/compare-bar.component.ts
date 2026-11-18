@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, ChangeDetectionStrategy } from '@angular/core';
 import { DiffResult } from '../../utils/json-diff';
 
 /** The bar above the panes in Compare: counts, ignore paths, options and actions. */
@@ -6,6 +6,7 @@ import { DiffResult } from '../../utils/json-diff';
   selector: 'app-compare-bar',
   standalone: false,
   templateUrl: './compare-bar.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './compare-bar.component.scss',
 })
 export class CompareBarComponent {

@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, ChangeDetectionStrategy } from '@angular/core';
 import { SavedFile } from '../../utils/file-store';
 import { byteLength, formatBytes } from '../../utils/json-utils';
 
@@ -12,6 +12,7 @@ export type PaneSide = 'left' | 'right';
   selector: 'app-files-panel',
   standalone: false,
   templateUrl: './files-panel.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './files-panel.component.scss',
 })
 export class FilesPanelComponent {
@@ -51,7 +52,10 @@ export class FilesPanelComponent {
 
   formatDate(ts: number): string {
     const d = new Date(ts);
-    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' ' +
-           d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    return (
+      d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) +
+      ' ' +
+      d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+    );
   }
 }

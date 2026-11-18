@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 import { JsonNode, TreeContext } from '../json-tree/json-tree.component';
 import { escapeHtml } from '../../utils/json-utils';
 
@@ -8,6 +8,7 @@ const MAX_STRING = 120;
   selector: 'app-json-tree-node',
   standalone: false,
   templateUrl: './json-tree-node.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './json-tree-node.component.scss',
 })
 export class JsonTreeNodeComponent {
@@ -57,7 +58,11 @@ export class JsonTreeNodeComponent {
     for (;;) {
       const hit = lower.indexOf(q, i);
       if (hit < 0) return out + escapeHtml(text.slice(i));
-      out += escapeHtml(text.slice(i, hit)) + '<mark>' + escapeHtml(text.slice(hit, hit + q.length)) + '</mark>';
+      out +=
+        escapeHtml(text.slice(i, hit)) +
+        '<mark>' +
+        escapeHtml(text.slice(hit, hit + q.length)) +
+        '</mark>';
       i = hit + q.length;
     }
   }
