@@ -49,6 +49,10 @@ export interface JsonNode {
   searchVisible: boolean;
   /** A string that looks like it holds a JSON object or array. */
   embedsJson: boolean;
+  /** Lowercased key, computed once when the node is created, for search. */
+  keyLower: string | null;
+  /** Lowercased `String(value)` for nodes without children (null otherwise), for search. */
+  valueLower: string | null;
 }
 
 /**
@@ -348,8 +352,8 @@ export class JsonTreeComponent implements OnChanges, OnDestroy {
   }
 
   private nodeMatches(node: JsonNode, q: string): boolean {
-    if (node.key !== null && node.key.toLowerCase().includes(q)) return true;
-    return node.children.length === 0 && String(node.value).toLowerCase().includes(q);
+    if (node.keyLower !== null && node.keyLower.includes(q)) return true;
+    return node.children.length === 0 && node.valueLower !== null && node.valueLower.includes(q);
   }
 
   // ── Selection, copy ───────────────────────────────────────────────────────
@@ -660,6 +664,8 @@ export class JsonTreeComponent implements OnChanges, OnDestroy {
       match: false,
       searchVisible: true,
       embedsJson: type === 'string' && looksLikeJson(value),
+      keyLower: key === null ? null : key.toLowerCase(),
+      valueLower: null,
     };
 
     if (type === 'object') {
@@ -671,6 +677,7 @@ export class JsonTreeComponent implements OnChanges, OnDestroy {
         this.createNode(String(i), v, childPath(path, i, true), true, collapseState, passDown),
       );
     }
+    if (node.children.length === 0) node.valueLower = String(value).toLowerCase();
     if (node.children.some((c) => c.hasChange)) node.hasChange = true;
     // When comparing, open the branches that lead to a difference (but not the inside of a
     // wholly added or removed subtree), so large documents are not expanded in full.
