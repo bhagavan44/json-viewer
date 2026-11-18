@@ -2,6 +2,8 @@
   <div class="header-logo">
     <img class="logo-icon" src="favicon.svg" alt="" width="28" height="28">
     <span class="app-title">JSON Viewer</span>
+    <a class="app-version" [href]="releaseUrl" target="_blank" rel="noopener"
+      [matTooltip]="'Release notes for v' + version">v{{ version }}</a>
   </div>
   <div class="view-seg" role="group" aria-label="View mode">
     <button type="button" [class.on]="viewMode === 'edit'" [attr.aria-pressed]="viewMode === 'edit'" (click)="viewModeChange.emit('edit')">
