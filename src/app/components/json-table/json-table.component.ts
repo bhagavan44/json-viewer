@@ -1,6 +1,14 @@
-import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, OnChanges, SimpleChanges, ChangeDetectionStrategy } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { JsonTable, cellText, cellValue, compareCells, findTables, tableColumns, toCsv } from '../../utils/json-table';
+import {
+  JsonTable,
+  cellText,
+  cellValue,
+  compareCells,
+  findTables,
+  tableColumns,
+  toCsv,
+} from '../../utils/json-table';
 
 /** Rows rendered at first, and added by each "Show more". */
 const PAGE = 200;
@@ -10,6 +18,7 @@ const PAGE = 200;
   selector: 'app-json-table',
   standalone: false,
   templateUrl: './json-table.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './json-table.component.scss',
 })
 export class JsonTableComponent implements OnChanges {
@@ -109,7 +118,10 @@ export class JsonTableComponent implements OnChanges {
     }
     let view = table.rows.map((_, i) => i);
     const q = this.query.trim().toLowerCase();
-    if (q) view = view.filter((i) => this.columns.some((c) => this.cell(i, c).toLowerCase().includes(q)));
+    if (q)
+      view = view.filter((i) =>
+        this.columns.some((c) => this.cell(i, c).toLowerCase().includes(q)),
+      );
     const col = this.sortColumn;
     if (col !== null) {
       const dir = this.sortDir;
@@ -126,14 +138,22 @@ export class JsonTableComponent implements OnChanges {
 
   /** CSV of the rows as filtered and sorted. */
   private csv(): string {
-    return toCsv(this.table!, this.view.map((i) => this.table!.rows[i]), this.columns);
+    return toCsv(
+      this.table!,
+      this.view.map((i) => this.table!.rows[i]),
+      this.columns,
+    );
   }
 
   copyCsv(): void {
     navigator.clipboard
       .writeText(this.csv())
-      .then(() => this.snackBar.open(`Copied ${this.view.length} rows as CSV`, '', { duration: 1800 }))
-      .catch(() => this.snackBar.open('Copy failed — clipboard access denied', '', { duration: 2500 }));
+      .then(() =>
+        this.snackBar.open(`Copied ${this.view.length} rows as CSV`, '', { duration: 1800 }),
+      )
+      .catch(() =>
+        this.snackBar.open('Copy failed — clipboard access denied', '', { duration: 2500 }),
+      );
   }
 
   downloadCsv(): void {

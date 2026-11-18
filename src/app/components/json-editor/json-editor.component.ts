@@ -9,6 +9,7 @@ import {
   Output,
   SimpleChanges,
   ViewChild,
+  ChangeDetectionStrategy,
 } from '@angular/core';
 
 declare const require: any;
@@ -17,6 +18,7 @@ declare const require: any;
   selector: 'app-json-editor',
   standalone: false,
   templateUrl: './json-editor.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './json-editor.component.scss',
 })
 export class JsonEditorComponent implements OnInit, OnChanges, OnDestroy {
@@ -125,7 +127,12 @@ export class JsonEditorComponent implements OnInit, OnChanges, OnDestroy {
     const model = this.editor.getModel();
     const start = model.getPositionAt(this.select.start);
     const end = model.getPositionAt(this.select.end);
-    const range = { startLineNumber: start.lineNumber, startColumn: start.column, endLineNumber: end.lineNumber, endColumn: end.column };
+    const range = {
+      startLineNumber: start.lineNumber,
+      startColumn: start.column,
+      endLineNumber: end.lineNumber,
+      endColumn: end.column,
+    };
     this.editor.setSelection(range);
     this.editor.revealRangeInCenterIfOutsideViewport(range);
     Promise.resolve().then(() => this.selectHandled.emit());
@@ -157,7 +164,11 @@ export class JsonEditorComponent implements OnInit, OnChanges, OnDestroy {
       bracketPairColorization: { enabled: true },
       guides: { bracketPairs: true },
       wordWrap: 'on',
-      scrollbar: { verticalScrollbarSize: 10, horizontal: 'hidden', alwaysConsumeMouseWheel: false },
+      scrollbar: {
+        verticalScrollbarSize: 10,
+        horizontal: 'hidden',
+        alwaysConsumeMouseWheel: false,
+      },
       padding: { top: 8 },
     });
 
@@ -186,7 +197,11 @@ export class JsonEditorComponent implements OnInit, OnChanges, OnDestroy {
     this.editor.addAction({
       id: 'format-json',
       label: 'Format JSON',
-      keybindings: [(window as any).monaco.KeyMod.Shift | (window as any).monaco.KeyMod.Alt | (window as any).monaco.KeyCode.KeyF],
+      keybindings: [
+        (window as any).monaco.KeyMod.Shift |
+          (window as any).monaco.KeyMod.Alt |
+          (window as any).monaco.KeyCode.KeyF,
+      ],
       run: () => this.editor.getAction('editor.action.formatDocument')?.run(),
     });
   }

@@ -1,9 +1,24 @@
-import { ChangeDetectorRef, Component, DoCheck, ElementRef, HostListener, OnDestroy, ViewChild } from '@angular/core';
+import {
+  ChangeDetectorRef,
+  Component,
+  DoCheck,
+  ElementRef,
+  HostListener,
+  OnDestroy,
+  ViewChild,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { DiffEntry, DiffKind, DiffResult, diffJson } from './utils/json-diff';
 import { JsonPathError, looksLikeJsonPath, queryJsonPath } from './utils/json-path';
 import { jsonPatch } from './utils/json-patch';
-import { SchemaError, SchemaLoadError, ValidationResult, looksLikeSchema, validateSchema } from './utils/json-schema-validate';
+import {
+  SchemaError,
+  SchemaLoadError,
+  ValidationResult,
+  looksLikeSchema,
+  validateSchema,
+} from './utils/json-schema-validate';
 import { parseJson, stringifyJson } from './utils/json-parse';
 import { byteLength, childPath, formatBytes, jsonTypeOf, summarizeValue } from './utils/json-utils';
 import { JsonErrorLocation, friendlyJsonError, locateJsonError } from './utils/json-error';
@@ -15,7 +30,14 @@ import { EditError, addChild, deleteAt, renameKey, setValue } from './utils/json
 import { describeRedaction, redact } from './utils/json-redact';
 import { TreeEdit } from './components/json-tree/json-tree.component';
 import { toJsonSchema } from './utils/json-schema';
-import { SHARE_HASH_PREFIX, SHARE_MAX_CHARS, SHARE_WARN_CHARS, ShareLinkError, decodeShare, encodeShare } from './utils/share-link';
+import {
+  SHARE_HASH_PREFIX,
+  SHARE_MAX_CHARS,
+  SHARE_WARN_CHARS,
+  ShareLinkError,
+  decodeShare,
+  encodeShare,
+} from './utils/share-link';
 import { PaletteCommand } from './components/command-palette/command-palette.component';
 import { FileStore, LocalStorageFileStore, SavedFile, createFileStore } from './utils/file-store';
 
@@ -75,7 +97,7 @@ export function splitJsonPaths(text: string): string[] {
     current += c;
   }
   parts.push(current);
-  return parts.map(p => p.trim()).filter(Boolean);
+  return parts.map((p) => p.trim()).filter(Boolean);
 }
 const PANEL_MODES: PanelMode[] = ['editor', 'tree', 'table'];
 
@@ -101,9 +123,20 @@ export interface PanelState {
 
 function newPanel(): PanelState {
   return {
-    jsonText: '', parsedJson: null, jsonError: null, isValid: false, mode: 'editor',
-    expandAllTrigger: 0, collapseAllTrigger: 0, currentFileId: null, sourceName: null, errorLocation: null, jumpRequest: null,
-    focusPath: null, treeReveal: null, editorSelect: null,
+    jsonText: '',
+    parsedJson: null,
+    jsonError: null,
+    isValid: false,
+    mode: 'editor',
+    expandAllTrigger: 0,
+    collapseAllTrigger: 0,
+    currentFileId: null,
+    sourceName: null,
+    errorLocation: null,
+    jumpRequest: null,
+    focusPath: null,
+    treeReveal: null,
+    editorSelect: null,
   };
 }
 
@@ -142,6 +175,7 @@ const MAX_OPEN_BYTES = 25 * 1024 * 1024;
   selector: 'app-root',
   standalone: false,
   templateUrl: './app.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './app.scss',
 })
 export class App implements DoCheck, OnDestroy {
@@ -159,8 +193,13 @@ export class App implements DoCheck, OnDestroy {
   ignoreText = '';
   /** Why `ignoreText` could not be used, if it could not. */
   ignoreError: string | null = null;
-  private diffCache: { left: unknown; right: unknown; matchArrays: boolean; ignoreText: string; result: DiffResult | null } =
-    { left: undefined, right: undefined, matchArrays: true, ignoreText: '', result: null };
+  private diffCache: {
+    left: unknown;
+    right: unknown;
+    matchArrays: boolean;
+    ignoreText: string;
+    result: DiffResult | null;
+  } = { left: undefined, right: undefined, matchArrays: true, ignoreText: '', result: null };
   private ignoreSets: { left: Set<string>; right: Set<string> } | undefined;
 
   left: PanelState = newPanel();
@@ -185,7 +224,10 @@ export class App implements DoCheck, OnDestroy {
 
   // The app runs without zone.js, so state changed inside a promise callback is not rendered
   // until something calls markForCheck(); do that after every async update.
-  constructor(private snackBar: MatSnackBar, private cdr: ChangeDetectorRef) {
+  constructor(
+    private snackBar: MatSnackBar,
+    private cdr: ChangeDetectorRef,
+  ) {
     this.activePanel = this.left;
     this.loadPersistedTheme();
     this.ready = this.init();
@@ -292,8 +334,12 @@ export class App implements DoCheck, OnDestroy {
       Array.isArray(v)
         ? v.map(sort)
         : jsonTypeOf(v) === 'object'
-          // fromEntries defines own properties, so a "__proto__" key is kept as a key
-          ? Object.fromEntries(Object.keys(v).sort().map(k => [k, sort(v[k])]))
+          ? // fromEntries defines own properties, so a "__proto__" key is kept as a key
+            Object.fromEntries(
+              Object.keys(v)
+                .sort()
+                .map((k) => [k, sort(v[k])]),
+            )
           : v;
     panel.jsonText = stringifyJson(sort(panel.parsedJson), 2);
     this.parsePanel(panel);
@@ -332,18 +378,27 @@ export class App implements DoCheck, OnDestroy {
         case 'add': {
           text = addChild(before, edit.path, edit.key, edit.value);
           const parent = jsonAt(panel.parsedJson, edit.path);
-          focus = edit.key !== null ? childPath(edit.path, edit.key, false) : childPath(edit.path, Array.isArray(parent) ? parent.length : 0, true);
+          focus =
+            edit.key !== null
+              ? childPath(edit.path, edit.key, false)
+              : childPath(edit.path, Array.isArray(parent) ? parent.length : 0, true);
           break;
         }
       }
     } catch (e) {
-      this.snackBar.open(e instanceof EditError ? e.message : 'Could not apply the edit', 'Dismiss', { duration: 4000 });
+      this.snackBar.open(
+        e instanceof EditError ? e.message : 'Could not apply the edit',
+        'Dismiss',
+        { duration: 4000 },
+      );
       return;
     }
     panel.jsonText = text;
     this.parsePanel(panel);
     this.navigateTo(panel, focus);
-    const label = { set: 'Value changed', rename: 'Key renamed', delete: 'Deleted', add: 'Added' }[edit.kind];
+    const label = { set: 'Value changed', rename: 'Key renamed', delete: 'Deleted', add: 'Added' }[
+      edit.kind
+    ];
     this.snackBar
       .open(label, 'Undo', { duration: 5000 })
       .onAction()
@@ -361,8 +416,18 @@ export class App implements DoCheck, OnDestroy {
     const r = redact(panel.parsedJson);
     navigator.clipboard
       .writeText(stringifyJson(r.value, 2))
-      .then(() => this.snackBar.open(r.count ? `Copied with ${describeRedaction(r)} hidden` : 'Copied (nothing sensitive found)', '', { duration: 3000 }))
-      .catch(() => this.snackBar.open('Copy failed — clipboard access denied', '', { duration: 2500 }));
+      .then(() =>
+        this.snackBar.open(
+          r.count
+            ? `Copied with ${describeRedaction(r)} hidden`
+            : 'Copied (nothing sensitive found)',
+          '',
+          { duration: 3000 },
+        ),
+      )
+      .catch(() =>
+        this.snackBar.open('Copy failed — clipboard access denied', '', { duration: 2500 }),
+      );
   }
 
   /** Hides sensitive values in the pane itself; the snackbar offers Undo. */
@@ -389,7 +454,7 @@ export class App implements DoCheck, OnDestroy {
   unwrapAt(panel: PanelState, path: string): void {
     if (!this.isReady(panel)) return;
     let changed = false;
-    const doc = replaceAt(panel.parsedJson, path, v => {
+    const doc = replaceAt(panel.parsedJson, path, (v) => {
       const inner = typeof v === 'string' ? parseEmbedded(v) : undefined;
       if (inner === undefined) return v;
       changed = true;
@@ -412,7 +477,9 @@ export class App implements DoCheck, OnDestroy {
       return;
     }
     this.setDocument(panel, value);
-    this.snackBar.open(`Unwrapped ${count} embedded JSON string${count === 1 ? '' : 's'}`, '', { duration: 2000 });
+    this.snackBar.open(`Unwrapped ${count} embedded JSON string${count === 1 ? '' : 's'}`, '', {
+      duration: 2000,
+    });
   }
 
   private fixMemo = new Map<PanelState, { text: string; fix: TextFix | null }>();
@@ -452,20 +519,26 @@ export class App implements DoCheck, OnDestroy {
     navigator.clipboard
       .writeText(panel.jsonText)
       .then(() => this.snackBar.open('Copied to clipboard!', '', { duration: 1500 }))
-      .catch(() => this.snackBar.open('Copy failed — use Ctrl+A, Ctrl+C in the editor', '', { duration: 2500 }));
+      .catch(() =>
+        this.snackBar.open('Copy failed — use Ctrl+A, Ctrl+C in the editor', '', {
+          duration: 2500,
+        }),
+      );
   }
 
   pasteJson(panel: PanelState): void {
     navigator.clipboard
       .readText()
-      .then(text => {
+      .then((text) => {
         if (text.trim()) {
           this.onTextChange(text, panel);
           this.cdr.markForCheck();
           this.snackBar.open('Pasted from clipboard', '', { duration: 1500 });
         }
       })
-      .catch(() => this.snackBar.open('Paste failed — clipboard access denied', '', { duration: 2500 }));
+      .catch(() =>
+        this.snackBar.open('Paste failed — clipboard access denied', '', { duration: 2500 }),
+      );
   }
 
   clearJson(panel: PanelState): void {
@@ -510,14 +583,21 @@ export class App implements DoCheck, OnDestroy {
     panel.focusPath = path;
     if (this.isTreeView(panel)) {
       panel.treeReveal = { path };
-    } else if (this.isEditorView(panel) && this.isReady(panel) && panel.jsonText.length <= MAX_LOCATE_CHARS) {
+    } else if (
+      this.isEditorView(panel) &&
+      this.isReady(panel) &&
+      panel.jsonText.length <= MAX_LOCATE_CHARS
+    ) {
       const span = spanOfPath(panel.jsonText, path);
       if (span) panel.editorSelect = { start: span.start, end: span.end };
     }
   }
 
   onCursor(panel: PanelState, offset: number): void {
-    panel.focusPath = this.isReady(panel) && panel.jsonText.length <= MAX_LOCATE_CHARS ? pathAtOffset(panel.jsonText, offset) : null;
+    panel.focusPath =
+      this.isReady(panel) && panel.jsonText.length <= MAX_LOCATE_CHARS
+        ? pathAtOffset(panel.jsonText, offset)
+        : null;
   }
 
   private crumbMemo = new Map<PanelState, { path: string | null; segments: PathSegment[] }>();
@@ -546,8 +626,12 @@ export class App implements DoCheck, OnDestroy {
     return panel.mode === 'table' ? 'table_chart' : 'code';
   }
 
-  expandAll(panel: PanelState): void { panel.expandAllTrigger++; }
-  collapseAll(panel: PanelState): void { panel.collapseAllTrigger++; }
+  expandAll(panel: PanelState): void {
+    panel.expandAllTrigger++;
+  }
+  collapseAll(panel: PanelState): void {
+    panel.collapseAllTrigger++;
+  }
 
   toggleTheme(): void {
     this.isDarkTheme = !this.isDarkTheme;
@@ -609,15 +693,30 @@ export class App implements DoCheck, OnDestroy {
     const b = this.right.parsedJson;
     const { matchArrays, ignoreText } = this;
     const c = this.diffCache;
-    if (c.left !== a || c.right !== b || c.matchArrays !== matchArrays || c.ignoreText !== ignoreText || !c.result) {
+    if (
+      c.left !== a ||
+      c.right !== b ||
+      c.matchArrays !== matchArrays ||
+      c.ignoreText !== ignoreText ||
+      !c.result
+    ) {
       this.ignoreSets = this.resolveIgnore(a, b);
-      this.diffCache = { left: a, right: b, matchArrays, ignoreText, result: diffJson(a, b, { matchArrays, ignore: this.ignoreSets }) };
+      this.diffCache = {
+        left: a,
+        right: b,
+        matchArrays,
+        ignoreText,
+        result: diffJson(a, b, { matchArrays, ignore: this.ignoreSets }),
+      };
     }
     return this.diffCache.result;
   }
 
   /** The tree paths that `ignoreText` selects in each document; sets `ignoreError` when it is invalid. */
-  private resolveIgnore(a: unknown, b: unknown): { left: Set<string>; right: Set<string> } | undefined {
+  private resolveIgnore(
+    a: unknown,
+    b: unknown,
+  ): { left: Set<string>; right: Set<string> } | undefined {
     this.ignoreError = null;
     const expressions = splitJsonPaths(this.ignoreText);
     if (!expressions.length) return undefined;
@@ -646,8 +745,16 @@ export class App implements DoCheck, OnDestroy {
     const ops = jsonPatch(this.left.parsedJson, this.right.parsedJson, ignored);
     navigator.clipboard
       .writeText(stringifyJson(ops, 2))
-      .then(() => this.snackBar.open(`Copied JSON Patch: ${ops.length} operation${ops.length === 1 ? '' : 's'}`, '', { duration: 2000 }))
-      .catch(() => this.snackBar.open('Copy failed — clipboard access denied', '', { duration: 2500 }));
+      .then(() =>
+        this.snackBar.open(
+          `Copied JSON Patch: ${ops.length} operation${ops.length === 1 ? '' : 's'}`,
+          '',
+          { duration: 2000 },
+        ),
+      )
+      .catch(() =>
+        this.snackBar.open('Copy failed — clipboard access denied', '', { duration: 2500 }),
+      );
   }
 
   // ── Schema validation (one pane holds the document, the other the schema) ──
@@ -671,15 +778,35 @@ export class App implements DoCheck, OnDestroy {
     const schemaPanel = docPanel === this.left ? this.right : this.left;
     const docSide = this.validationDoc;
     const schemaSide = docSide === 'left' ? 'right' : 'left';
-    if (!this.isReady(schemaPanel)) return { docSide, schemaSide, problem: `Load a JSON Schema in the ${schemaSide} pane.` };
-    if (!this.isReady(docPanel)) return { docSide, schemaSide, problem: `Load valid JSON in the ${docSide} pane to validate it.` };
+    if (!this.isReady(schemaPanel))
+      return { docSide, schemaSide, problem: `Load a JSON Schema in the ${schemaSide} pane.` };
+    if (!this.isReady(docPanel))
+      return {
+        docSide,
+        schemaSide,
+        problem: `Load valid JSON in the ${docSide} pane to validate it.`,
+      };
     const memo = this.validationMemo;
-    if (memo && memo.doc === docPanel.parsedJson && memo.schema === schemaPanel.parsedJson && memo.view.docSide === docSide) return memo.view;
+    if (
+      memo &&
+      memo.doc === docPanel.parsedJson &&
+      memo.schema === schemaPanel.parsedJson &&
+      memo.view.docSide === docSide
+    )
+      return memo.view;
     let view: ValidationView;
     try {
-      view = { docSide, schemaSide, result: validateSchema(docPanel.parsedJson, schemaPanel.parsedJson) };
+      view = {
+        docSide,
+        schemaSide,
+        result: validateSchema(docPanel.parsedJson, schemaPanel.parsedJson),
+      };
     } catch (e) {
-      view = { docSide, schemaSide, problem: `The schema cannot be used: ${e instanceof SchemaLoadError ? e.message : 'unexpected error'}.` };
+      view = {
+        docSide,
+        schemaSide,
+        problem: `The schema cannot be used: ${e instanceof SchemaLoadError ? e.message : 'unexpected error'}.`,
+      };
     }
     this.validationMemo = { doc: docPanel.parsedJson, schema: schemaPanel.parsedJson, view };
     return view;
@@ -688,7 +815,12 @@ export class App implements DoCheck, OnDestroy {
   /** Offer validation when the other pane holds a schema and this one holds a document. */
   canValidate(panel: PanelState): boolean {
     const other = panel === this.left ? this.right : this.left;
-    return this.viewMode === 'edit' && this.isReady(panel) && !this.holdsSchema(panel) && this.holdsSchema(other);
+    return (
+      this.viewMode === 'edit' &&
+      this.isReady(panel) &&
+      !this.holdsSchema(panel) &&
+      this.holdsSchema(other)
+    );
   }
 
   revealSchemaError(error: SchemaError): void {
@@ -740,7 +872,17 @@ export class App implements DoCheck, OnDestroy {
   }
 
   swapPanels(): void {
-    const fields: (keyof PanelState)[] = ['jsonText', 'parsedJson', 'jsonError', 'isValid', 'currentFileId', 'sourceName', 'errorLocation', 'mode', 'focusPath'];
+    const fields: (keyof PanelState)[] = [
+      'jsonText',
+      'parsedJson',
+      'jsonError',
+      'isValid',
+      'currentFileId',
+      'sourceName',
+      'errorLocation',
+      'mode',
+      'focusPath',
+    ];
     for (const f of fields) {
       const tmp = this.left[f];
       (this.left as any)[f] = this.right[f];
@@ -779,12 +921,23 @@ export class App implements DoCheck, OnDestroy {
     const width = el.getBoundingClientRect().width;
     const step = event.shiftKey ? 100 : 20;
     switch (event.key) {
-      case 'ArrowLeft': this.setLeftWidth(width - step); break;
-      case 'ArrowRight': this.setLeftWidth(width + step); break;
-      case 'Home': this.setLeftWidth(0); break;
-      case 'End': this.setLeftWidth(Infinity); break;
-      case 'Enter': this.resetSplit(); break;
-      default: return;
+      case 'ArrowLeft':
+        this.setLeftWidth(width - step);
+        break;
+      case 'ArrowRight':
+        this.setLeftWidth(width + step);
+        break;
+      case 'Home':
+        this.setLeftWidth(0);
+        break;
+      case 'End':
+        this.setLeftWidth(Infinity);
+        break;
+      case 'Enter':
+        this.resetSplit();
+        break;
+      default:
+        return;
     }
     event.preventDefault();
   }
@@ -832,11 +985,14 @@ export class App implements DoCheck, OnDestroy {
   async openFiles(files: File[], target: PanelState): Promise<void> {
     if (!files.length) return;
     const other = target === this.left ? this.right : this.left;
-    if (files.length > 2) this.snackBar.open('Only the first two files were opened', '', { duration: 2500 });
+    if (files.length > 2)
+      this.snackBar.open('Only the first two files were opened', '', { duration: 2500 });
     for (const [i, file] of files.slice(0, 2).entries()) {
       const panel = i === 0 ? target : other;
       if (file.size > MAX_OPEN_BYTES) {
-        this.snackBar.open(`"${file.name}" is larger than ${formatBytes(MAX_OPEN_BYTES)}`, '', { duration: 3500 });
+        this.snackBar.open(`"${file.name}" is larger than ${formatBytes(MAX_OPEN_BYTES)}`, '', {
+          duration: 3500,
+        });
         continue;
       }
       try {
@@ -845,7 +1001,11 @@ export class App implements DoCheck, OnDestroy {
         panel.sourceName = file.name;
         this.onTextChange(text, panel);
         this.cdr.markForCheck();
-        this.snackBar.open(`Opened "${file.name}" in the ${panel === this.left ? 'left' : 'right'} pane`, '', { duration: 1800 });
+        this.snackBar.open(
+          `Opened "${file.name}" in the ${panel === this.left ? 'left' : 'right'} pane`,
+          '',
+          { duration: 1800 },
+        );
       } catch {
         this.snackBar.open(`Could not read "${file.name}"`, '', { duration: 3000 });
       }
@@ -896,25 +1056,59 @@ export class App implements DoCheck, OnDestroy {
   // ── Session (autosave / restore) ──────────────────────────────────────────
   private sessionTimer?: ReturnType<typeof setTimeout>;
   private seen = {
-    lt: '', rt: '', lf: null as string | null, rf: null as string | null, ls: null as string | null, rs: null as string | null,
-    lm: 'editor', rm: 'editor', vm: 'edit', ap: 'left', files: '', ma: true, ig: '',
+    lt: '',
+    rt: '',
+    lf: null as string | null,
+    rf: null as string | null,
+    ls: null as string | null,
+    rs: null as string | null,
+    lm: 'editor',
+    rm: 'editor',
+    vm: 'edit',
+    ap: 'left',
+    files: '',
+    ma: true,
+    ig: '',
   };
 
   /** Cheap change detection: runs on every render, and only schedules a save when something moved. */
   ngDoCheck(): void {
     if (!this.loaded) return; // do not overwrite the stored session before it is restored
-    const l = this.left, r = this.right, seen = this.seen;
+    const l = this.left,
+      r = this.right,
+      seen = this.seen;
     const files = this.savedFiles.length + ':' + (this.savedFiles[0]?.savedAt ?? '');
     const ap = this.activePanel === this.right ? 'right' : 'left';
     if (
-      l.jsonText === seen.lt && r.jsonText === seen.rt && l.currentFileId === seen.lf && r.currentFileId === seen.rf &&
-      l.sourceName === seen.ls && r.sourceName === seen.rs && l.mode === seen.lm && r.mode === seen.rm &&
-      this.viewMode === seen.vm && ap === seen.ap && files === seen.files && this.matchArrays === seen.ma &&
+      l.jsonText === seen.lt &&
+      r.jsonText === seen.rt &&
+      l.currentFileId === seen.lf &&
+      r.currentFileId === seen.rf &&
+      l.sourceName === seen.ls &&
+      r.sourceName === seen.rs &&
+      l.mode === seen.lm &&
+      r.mode === seen.rm &&
+      this.viewMode === seen.vm &&
+      ap === seen.ap &&
+      files === seen.files &&
+      this.matchArrays === seen.ma &&
       this.ignoreText === seen.ig
-    ) return;
+    )
+      return;
     Object.assign(seen, {
-      lt: l.jsonText, rt: r.jsonText, lf: l.currentFileId, rf: r.currentFileId, ls: l.sourceName, rs: r.sourceName,
-      lm: l.mode, rm: r.mode, vm: this.viewMode, ap, files, ma: this.matchArrays, ig: this.ignoreText,
+      lt: l.jsonText,
+      rt: r.jsonText,
+      lf: l.currentFileId,
+      rf: r.currentFileId,
+      ls: l.sourceName,
+      rs: r.sourceName,
+      lm: l.mode,
+      rm: r.mode,
+      vm: this.viewMode,
+      ap,
+      files,
+      ma: this.matchArrays,
+      ig: this.ignoreText,
     });
     clearTimeout(this.sessionTimer);
     this.sessionTimer = setTimeout(() => this.persistSession(), 500);
@@ -934,7 +1128,7 @@ export class App implements DoCheck, OnDestroy {
   }
 
   private paneSession(panel: PanelState): PaneSession {
-    const file = this.savedFiles.find(f => f.id === panel.currentFileId);
+    const file = this.savedFiles.find((f) => f.id === panel.currentFileId);
     const matchesFile = !!file && file.content === panel.jsonText;
     const keepText = !matchesFile && panel.jsonText.length <= MAX_SESSION_TEXT;
     return {
@@ -974,12 +1168,15 @@ export class App implements DoCheck, OnDestroy {
     }
     if (session?.version !== 1 || !session.left || !session.right) return false;
 
-    for (const [panel, pane] of [[this.left, session.left], [this.right, session.right]] as const) {
-      const file = this.savedFiles.find(f => f.id === pane.fileId);
+    for (const [panel, pane] of [
+      [this.left, session.left],
+      [this.right, session.right],
+    ] as const) {
+      const file = this.savedFiles.find((f) => f.id === pane.fileId);
       panel.currentFileId = file ? file.id : null;
       panel.sourceName = typeof pane.sourceName === 'string' ? pane.sourceName : null;
       panel.mode = PANEL_MODES.includes(pane.mode) ? pane.mode : 'editor';
-      panel.jsonText = typeof pane.text === 'string' ? pane.text : file?.content ?? '';
+      panel.jsonText = typeof pane.text === 'string' ? pane.text : (file?.content ?? '');
       this.parsePanel(panel);
     }
     this.viewMode = session.viewMode === 'compare' ? 'compare' : 'edit';
@@ -1001,13 +1198,17 @@ export class App implements DoCheck, OnDestroy {
     }
     let hidden = 0;
     if (hideSensitive) {
-      const panes = [this.left, this.right].filter(p => p.jsonText.trim());
-      const invalid = panes.find(p => !this.isReady(p));
+      const panes = [this.left, this.right].filter((p) => p.jsonText.trim());
+      const invalid = panes.find((p) => !this.isReady(p));
       if (invalid) {
-        this.snackBar.open(`The ${invalid === this.left ? 'left' : 'right'} pane is not valid JSON, so it cannot be checked for sensitive data`, 'Dismiss', { duration: 5000 });
+        this.snackBar.open(
+          `The ${invalid === this.left ? 'left' : 'right'} pane is not valid JSON, so it cannot be checked for sensitive data`,
+          'Dismiss',
+          { duration: 5000 },
+        );
         return;
       }
-      const texts = [this.left, this.right].map(p => {
+      const texts = [this.left, this.right].map((p) => {
         if (!p.jsonText.trim()) return '';
         const r = redact(p.parsedJson);
         hidden += r.count;
@@ -1018,19 +1219,31 @@ export class App implements DoCheck, OnDestroy {
     try {
       const payload = await encodeShare({ left, right, view: this.viewMode });
       if (payload.length > SHARE_MAX_CHARS) {
-        this.snackBar.open('Too large for a link. Download the files and send those instead.', 'Dismiss', { duration: 6000 });
+        this.snackBar.open(
+          'Too large for a link. Download the files and send those instead.',
+          'Dismiss',
+          { duration: 6000 },
+        );
         return;
       }
       const url = `${location.origin}${location.pathname}${SHARE_HASH_PREFIX}${payload}`;
       await navigator.clipboard.writeText(url);
-      const what = hideSensitive ? (hidden ? `Link copied, with ${hidden} sensitive value${hidden === 1 ? '' : 's'} hidden` : 'Link copied (nothing sensitive found)') : 'Link copied';
+      const what = hideSensitive
+        ? hidden
+          ? `Link copied, with ${hidden} sensitive value${hidden === 1 ? '' : 's'} hidden`
+          : 'Link copied (nothing sensitive found)'
+        : 'Link copied';
       this.snackBar.open(
-        payload.length > SHARE_WARN_CHARS ? `${what}. It is long, so some chat apps may cut it off.` : what,
+        payload.length > SHARE_WARN_CHARS
+          ? `${what}. It is long, so some chat apps may cut it off.`
+          : what,
         '',
         { duration: 3000 },
       );
     } catch {
-      this.snackBar.open('Could not copy the link: clipboard access denied', '', { duration: 3000 });
+      this.snackBar.open('Could not copy the link: clipboard access denied', '', {
+        duration: 3000,
+      });
     }
     this.cdr.markForCheck();
   }
@@ -1043,14 +1256,19 @@ export class App implements DoCheck, OnDestroy {
   /** Opens the documents in a `#s=` share link. Returns false when the hash is not a share link. */
   async openSharedHash(hash: string): Promise<boolean> {
     if (!hash.startsWith(SHARE_HASH_PREFIX)) return false;
-    const before = [this.left, this.right].map(p => ({
-      jsonText: p.jsonText, currentFileId: p.currentFileId, sourceName: p.sourceName,
+    const before = [this.left, this.right].map((p) => ({
+      jsonText: p.jsonText,
+      currentFileId: p.currentFileId,
+      sourceName: p.sourceName,
     }));
-    const hadWork = before.some(b => b.jsonText.trim());
+    const hadWork = before.some((b) => b.jsonText.trim());
     const viewBefore = this.viewMode;
     try {
       const shared = await decodeShare(hash.slice(SHARE_HASH_PREFIX.length));
-      for (const [panel, text] of [[this.left, shared.left], [this.right, shared.right]] as const) {
+      for (const [panel, text] of [
+        [this.left, shared.left],
+        [this.right, shared.right],
+      ] as const) {
         panel.currentFileId = null;
         panel.sourceName = null;
         panel.jsonText = text;
@@ -1059,7 +1277,9 @@ export class App implements DoCheck, OnDestroy {
       this.viewMode = shared.view;
       // Drop the hash so a reload shows the session instead of re-importing the link.
       history.replaceState(null, '', location.pathname + location.search);
-      const ref = this.snackBar.open('Opened the shared documents', hadWork ? 'Undo' : '', { duration: hadWork ? 10000 : 3000 });
+      const ref = this.snackBar.open('Opened the shared documents', hadWork ? 'Undo' : '', {
+        duration: hadWork ? 10000 : 3000,
+      });
       if (hadWork) {
         ref.onAction().subscribe(() => {
           [this.left, this.right].forEach((panel, i) => {
@@ -1071,7 +1291,11 @@ export class App implements DoCheck, OnDestroy {
         });
       }
     } catch (e: any) {
-      this.snackBar.open(`Could not open the link. ${e instanceof ShareLinkError ? e.message : 'Something went wrong'}.`, 'Dismiss', { duration: 6000 });
+      this.snackBar.open(
+        `Could not open the link. ${e instanceof ShareLinkError ? e.message : 'Something went wrong'}.`,
+        'Dismiss',
+        { duration: 6000 },
+      );
     }
     this.cdr.markForCheck();
     return true;
@@ -1092,7 +1316,8 @@ export class App implements DoCheck, OnDestroy {
     } else if (key === 's') {
       event.preventDefault(); // never the browser's "Save page"
       if (this.showSaveDialog) void this.confirmSave();
-      else if (!this.showPalette) event.shiftKey ? this.openSaveDialog(panel) : void this.quickSave(panel);
+      else if (!this.showPalette)
+        event.shiftKey ? this.openSaveDialog(panel) : void this.quickSave(panel);
     } else if (key === 'o' && !event.shiftKey && !this.showSaveDialog) {
       event.preventDefault();
       this.closePalette();
@@ -1103,7 +1328,7 @@ export class App implements DoCheck, OnDestroy {
   /** Ctrl/Cmd+S: saves a pane that already has a saved file in place; otherwise asks for a name. */
   async quickSave(panel: PanelState): Promise<void> {
     if (!panel.jsonText.trim()) return;
-    const file = this.savedFiles.find(f => f.id === panel.currentFileId);
+    const file = this.savedFiles.find((f) => f.id === panel.currentFileId);
     if (!file) return this.openSaveDialog(panel);
     this.savingPanel = panel;
     this.saveFileName = file.name;
@@ -1138,12 +1363,38 @@ export class App implements DoCheck, OnDestroy {
       add('Format', 'Sort keys A → Z', () => this.sortKeys(p), true);
       add('Format', 'Unwrap embedded JSON strings', () => this.unwrapAllIn(p), true);
       add('Convert', 'Copy as YAML', () => this.copyConverted(p, 'YAML', toYaml), true);
-      add('Convert', 'Copy as TypeScript types', () => this.copyConverted(p, 'TypeScript types', v => toTypeScript(v)), true);
+      add(
+        'Convert',
+        'Copy as TypeScript types',
+        () => this.copyConverted(p, 'TypeScript types', (v) => toTypeScript(v)),
+        true,
+      );
       add('Copy', 'Copy with sensitive values hidden', () => this.copyRedacted(p), true);
-      add('Edit', 'Hide sensitive values (passwords, tokens, emails, cards)', () => this.redactPane(p), true);
-      add('Convert', 'Copy as C# classes', () => this.copyConverted(p, 'C# classes', v => toCSharp(v)), true);
-      if (Array.isArray(p.parsedJson)) add('Convert', 'Copy as JSON Lines', () => this.copyConverted(p, 'JSON Lines', v => toJsonLines(v)), true);
-      add('Convert', 'Copy as JSON Schema', () => this.copyConverted(p, 'JSON Schema', v => JSON.stringify(toJsonSchema(v), null, 2)), true);
+      add(
+        'Edit',
+        'Hide sensitive values (passwords, tokens, emails, cards)',
+        () => this.redactPane(p),
+        true,
+      );
+      add(
+        'Convert',
+        'Copy as C# classes',
+        () => this.copyConverted(p, 'C# classes', (v) => toCSharp(v)),
+        true,
+      );
+      if (Array.isArray(p.parsedJson))
+        add(
+          'Convert',
+          'Copy as JSON Lines',
+          () => this.copyConverted(p, 'JSON Lines', (v) => toJsonLines(v)),
+          true,
+        );
+      add(
+        'Convert',
+        'Copy as JSON Schema',
+        () => this.copyConverted(p, 'JSON Schema', (v) => JSON.stringify(toJsonSchema(v), null, 2)),
+        true,
+      );
     }
     add('Copy', 'Copy JSON', () => this.copyJson(p), true);
     add('Edit', 'Paste JSON from clipboard', () => this.pasteJson(p), true);
@@ -1168,16 +1419,27 @@ export class App implements DoCheck, OnDestroy {
       add('View', 'Expand all nodes', () => this.expandAll(p), true);
       add('View', 'Collapse all nodes', () => this.collapseAll(p), true);
     }
-    add('View', this.viewMode === 'edit' ? 'Switch to Compare' : 'Switch to Workspace', () => this.setViewMode(this.viewMode === 'edit' ? 'compare' : 'edit'));
+    add('View', this.viewMode === 'edit' ? 'Switch to Compare' : 'Switch to Workspace', () =>
+      this.setViewMode(this.viewMode === 'edit' ? 'compare' : 'edit'),
+    );
     add('View', 'Swap left and right', () => this.swapPanels());
     if (this.compareReady) add('Compare', 'Copy JSON Patch (left → right)', () => this.copyPatch());
     if (this.isReady(this.left) && this.isReady(this.right)) {
-      add('Validate', 'Validate the left pane against the schema in the right pane', () => this.startValidation('left'));
-      add('Validate', 'Validate the right pane against the schema in the left pane', () => this.startValidation('right'));
+      add('Validate', 'Validate the left pane against the schema in the right pane', () =>
+        this.startValidation('left'),
+      );
+      add('Validate', 'Validate the right pane against the schema in the left pane', () =>
+        this.startValidation('right'),
+      );
     }
-    if (this.validationDoc) add('Validate', 'Close schema validation', () => this.closeValidation());
-    add('View', this.showFilesPanel ? 'Hide saved files' : 'Show saved files', () => this.toggleFilesPanel());
-    add('View', this.isDarkTheme ? 'Switch to light theme' : 'Switch to dark theme', () => this.toggleTheme());
+    if (this.validationDoc)
+      add('Validate', 'Close schema validation', () => this.closeValidation());
+    add('View', this.showFilesPanel ? 'Hide saved files' : 'Show saved files', () =>
+      this.toggleFilesPanel(),
+    );
+    add('View', this.isDarkTheme ? 'Switch to light theme' : 'Switch to dark theme', () =>
+      this.toggleTheme(),
+    );
 
     for (const file of this.savedFiles) {
       add('Open', `“${file.name}” in the left pane`, () => this.openFileIn(file, this.left));
@@ -1190,13 +1452,20 @@ export class App implements DoCheck, OnDestroy {
     navigator.clipboard
       .writeText(convert(panel.parsedJson))
       .then(() => this.snackBar.open(`Copied as ${label}`, '', { duration: 1800 }))
-      .catch(() => this.snackBar.open('Copy failed — clipboard access denied', '', { duration: 2500 }));
+      .catch(() =>
+        this.snackBar.open('Copy failed — clipboard access denied', '', { duration: 2500 }),
+      );
   }
 
   @HostListener('document:keydown.escape')
   onEscapeKey(): void {
-    if (this.showSaveDialog) { this.cancelSave(); return; }
-    if (this.showFilesPanel && this.isNarrow) { this.closeFilesPanel(); }
+    if (this.showSaveDialog) {
+      this.cancelSave();
+      return;
+    }
+    if (this.showFilesPanel && this.isNarrow) {
+      this.closeFilesPanel();
+    }
   }
 
   /** Re-evaluates `isNarrow` (and the drawer backdrop) when the window resizes. */
@@ -1235,12 +1504,14 @@ export class App implements DoCheck, OnDestroy {
   /** True when the pane holds text that is not saved (or differs from its saved file). */
   isDirty(panel: PanelState): boolean {
     if (!panel.jsonText.trim()) return false;
-    const file = this.savedFiles.find(f => f.id === panel.currentFileId);
+    const file = this.savedFiles.find((f) => f.id === panel.currentFileId);
     return !file || file.content !== panel.jsonText;
   }
 
   panelFileName(panel: PanelState): string | null {
-    const saved = panel.currentFileId ? this.savedFiles.find(f => f.id === panel.currentFileId) : undefined;
+    const saved = panel.currentFileId
+      ? this.savedFiles.find((f) => f.id === panel.currentFileId)
+      : undefined;
     return saved?.name ?? panel.sourceName;
   }
 
@@ -1251,16 +1522,58 @@ export class App implements DoCheck, OnDestroy {
     if (!query) return this.savedFiles;
     const memo = this.fileFilter;
     if (memo && memo.files === this.savedFiles && memo.query === query) return memo.result;
-    const result = this.savedFiles.filter(f => f.name.toLowerCase().includes(query) || f.content.toLowerCase().includes(query));
+    const result = this.savedFiles.filter(
+      (f) => f.name.toLowerCase().includes(query) || f.content.toLowerCase().includes(query),
+    );
     this.fileFilter = { files: this.savedFiles, query, result };
     return result;
   }
 
   generateRandomName(): string {
-    const adj = ['amber', 'brave', 'crisp', 'dusk', 'echo', 'fern', 'gilt', 'haze', 'ivory', 'jade',
-                 'keen', 'lunar', 'misty', 'noble', 'opal', 'pine', 'quiet', 'rusty', 'sage', 'teal'];
-    const noun = ['arc', 'bay', 'cove', 'dale', 'edge', 'ford', 'glade', 'helm', 'isle', 'knoll',
-                  'lake', 'mire', 'nook', 'oasis', 'peak', 'quay', 'reef', 'shore', 'tide', 'vale'];
+    const adj = [
+      'amber',
+      'brave',
+      'crisp',
+      'dusk',
+      'echo',
+      'fern',
+      'gilt',
+      'haze',
+      'ivory',
+      'jade',
+      'keen',
+      'lunar',
+      'misty',
+      'noble',
+      'opal',
+      'pine',
+      'quiet',
+      'rusty',
+      'sage',
+      'teal',
+    ];
+    const noun = [
+      'arc',
+      'bay',
+      'cove',
+      'dale',
+      'edge',
+      'ford',
+      'glade',
+      'helm',
+      'isle',
+      'knoll',
+      'lake',
+      'mire',
+      'nook',
+      'oasis',
+      'peak',
+      'quay',
+      'reef',
+      'shore',
+      'tide',
+      'vale',
+    ];
     const a = adj[Math.floor(Math.random() * adj.length)];
     const n = noun[Math.floor(Math.random() * noun.length)];
     const num = Math.floor(Math.random() * 1000);
@@ -1271,7 +1584,7 @@ export class App implements DoCheck, OnDestroy {
     this.savingPanel = panel;
     this.activePanel = panel;
     if (panel.currentFileId) {
-      const current = this.savedFiles.find(f => f.id === panel.currentFileId);
+      const current = this.savedFiles.find((f) => f.id === panel.currentFileId);
       this.saveFileName = current?.name ?? this.generateRandomName();
     } else if (panel.sourceName) {
       this.saveFileName = panel.sourceName.replace(/\.(json|txt)$/i, '');
@@ -1286,7 +1599,9 @@ export class App implements DoCheck, OnDestroy {
     const panel = this.savingPanel;
     if (!panel || !panel.jsonText.trim()) return;
     const name = this.saveFileName.trim() || this.generateRandomName();
-    const existing = panel.currentFileId ? this.savedFiles.find(f => f.id === panel.currentFileId) : undefined;
+    const existing = panel.currentFileId
+      ? this.savedFiles.find((f) => f.id === panel.currentFileId)
+      : undefined;
     const file: SavedFile = {
       id: existing?.id ?? Date.now().toString(36) + Math.random().toString(36).slice(2),
       name,
@@ -1298,11 +1613,15 @@ export class App implements DoCheck, OnDestroy {
     try {
       await this.store.put(file);
     } catch {
-      this.snackBar.open(`Could not save "${name}": browser storage is full or unavailable`, 'Dismiss', { duration: 6000 });
+      this.snackBar.open(
+        `Could not save "${name}": browser storage is full or unavailable`,
+        'Dismiss',
+        { duration: 6000 },
+      );
       this.cdr.markForCheck();
       return;
     }
-    this.savedFiles = [file, ...this.savedFiles.filter(f => f.id !== file.id)];
+    this.savedFiles = [file, ...this.savedFiles.filter((f) => f.id !== file.id)];
     panel.currentFileId = file.id;
     this.snackBar.open(existing ? `Saved "${name}"` : `Saved as "${name}"`, '', { duration: 2000 });
     this.cdr.markForCheck();
@@ -1347,7 +1666,7 @@ export class App implements DoCheck, OnDestroy {
 
   async deleteFile(id: string, event?: MouseEvent): Promise<void> {
     event?.stopPropagation();
-    const file = this.savedFiles.find(f => f.id === id);
+    const file = this.savedFiles.find((f) => f.id === id);
     if (!file) return;
     try {
       await this.store.delete(id);
@@ -1355,9 +1674,9 @@ export class App implements DoCheck, OnDestroy {
       this.snackBar.open(`Could not delete "${file.name}"`, 'Dismiss', { duration: 4000 });
       return;
     }
-    const panes = [this.left, this.right].filter(p => p.currentFileId === id);
-    panes.forEach(p => (p.currentFileId = null));
-    this.savedFiles = this.savedFiles.filter(f => f.id !== id);
+    const panes = [this.left, this.right].filter((p) => p.currentFileId === id);
+    panes.forEach((p) => (p.currentFileId = null));
+    this.savedFiles = this.savedFiles.filter((f) => f.id !== id);
     this.cdr.markForCheck();
     this.snackBar
       .open(`Deleted "${file.name}"`, 'Undo', { duration: 6000 })
@@ -1373,8 +1692,10 @@ export class App implements DoCheck, OnDestroy {
       this.snackBar.open(`Could not restore "${file.name}"`, 'Dismiss', { duration: 4000 });
       return;
     }
-    this.savedFiles = [...this.savedFiles.filter(f => f.id !== file.id), file].sort((a, b) => b.savedAt - a.savedAt);
-    panes.filter(p => p.currentFileId === null).forEach(p => (p.currentFileId = file.id));
+    this.savedFiles = [...this.savedFiles.filter((f) => f.id !== file.id), file].sort(
+      (a, b) => b.savedAt - a.savedAt,
+    );
+    panes.filter((p) => p.currentFileId === null).forEach((p) => (p.currentFileId = file.id));
     this.cdr.markForCheck();
   }
 
@@ -1386,7 +1707,7 @@ export class App implements DoCheck, OnDestroy {
 
   async confirmRename(id: string): Promise<void> {
     const name = this.renameValue.trim();
-    const file = this.savedFiles.find(f => f.id === id);
+    const file = this.savedFiles.find((f) => f.id === id);
     this.renamingFileId = null;
     if (!name || !file || file.name === name) return;
     const renamed = { ...file, name };
@@ -1396,7 +1717,7 @@ export class App implements DoCheck, OnDestroy {
       this.snackBar.open(`Could not rename "${file.name}"`, 'Dismiss', { duration: 4000 });
       return;
     }
-    this.savedFiles = this.savedFiles.map(f => (f.id === id ? renamed : f));
+    this.savedFiles = this.savedFiles.map((f) => (f.id === id ? renamed : f));
     this.cdr.markForCheck();
   }
 

@@ -1,10 +1,28 @@
 import { CdkVirtualScrollViewport } from '@angular/cdk/scrolling';
-import { ChangeDetectorRef, Component, ElementRef, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges, ViewChild } from '@angular/core';
+import {
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  EventEmitter,
+  Input,
+  OnChanges,
+  OnDestroy,
+  Output,
+  SimpleChanges,
+  ViewChild,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { DiffKind } from '../../utils/json-diff';
 import { stringifyJson } from '../../utils/json-parse';
 import { looksLikeJson, parseEmbedded } from '../../utils/json-unwrap';
-import { EditError, InputType, inputTextOf, inputTypeOf, valueFromInput } from '../../utils/json-edit';
+import {
+  EditError,
+  InputType,
+  inputTextOf,
+  inputTypeOf,
+  valueFromInput,
+} from '../../utils/json-edit';
 import { JsonPathError, looksLikeJsonPath, queryJsonPath } from '../../utils/json-path';
 import { byteLength, childPath, formatBytes, JsonType, jsonTypeOf } from '../../utils/json-utils';
 
@@ -83,6 +101,7 @@ const LARGE_TREE_NODES = 20_000;
   selector: 'app-json-tree',
   standalone: false,
   templateUrl: './json-tree.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './json-tree.component.scss',
 })
 export class JsonTreeComponent implements OnChanges, OnDestroy {
@@ -222,7 +241,8 @@ export class JsonTreeComponent implements OnChanges, OnDestroy {
   private refresh(): void {
     const rows: TreeRow[] = [];
     const visible = (n: JsonNode): boolean =>
-      !(this.ctx.changesOnly && !n.hasChange) && !(this.ctx.filter && this.ctx.active && !n.searchVisible);
+      !(this.ctx.changesOnly && !n.hasChange) &&
+      !(this.ctx.filter && this.ctx.active && !n.searchVisible);
     const walk = (n: JsonNode, depth: number): void => {
       if (!visible(n)) return;
       rows.push({ node: n, depth, closing: false });
@@ -237,7 +257,9 @@ export class JsonTreeComponent implements OnChanges, OnDestroy {
 
   get emptyMessage(): string {
     if (this.ctx.changesOnly) return 'No differences on this side';
-    return this.queryError ? `Invalid path: ${this.queryError}` : `Nothing matches “${this.queryText}”`;
+    return this.queryError
+      ? `Invalid path: ${this.queryError}`
+      : `Nothing matches “${this.queryText}”`;
   }
 
   // ── Search ────────────────────────────────────────────────────────────────
@@ -305,7 +327,8 @@ export class JsonTreeComponent implements OnChanges, OnDestroy {
       }
     }
     const visit = (node: JsonNode, forced: boolean): boolean => {
-      node.match = active && (this.ctx.pathMode ? this.queryPaths.has(node.path) : this.nodeMatches(node, q));
+      node.match =
+        active && (this.ctx.pathMode ? this.queryPaths.has(node.path) : this.nodeMatches(node, q));
       if (node.match) this.matchPaths.push(node.path);
       const inherited = forced || node.match;
       let descendantMatch = false;
@@ -376,7 +399,14 @@ export class JsonTreeComponent implements OnChanges, OnDestroy {
   }
 
   startRename(): void {
-    if (this.canRename) this.form = { mode: 'rename', key: this.selected!.key!, type: 'string', text: '', error: null };
+    if (this.canRename)
+      this.form = {
+        mode: 'rename',
+        key: this.selected!.key!,
+        type: 'string',
+        text: '',
+        error: null,
+      };
   }
 
   startAdd(): void {
@@ -401,15 +431,26 @@ export class JsonTreeComponent implements OnChanges, OnDestroy {
       if (form.mode === 'rename') {
         const key = form.key;
         if (!key) throw new EditError('Type a name');
-        if (key !== node.key && this.siblingKeys(node).includes(key)) throw new EditError(`"${key}" already exists here`);
+        if (key !== node.key && this.siblingKeys(node).includes(key))
+          throw new EditError(`"${key}" already exists here`);
         if (key !== node.key) this.edit.emit({ kind: 'rename', path: node.path, key });
       } else if (form.mode === 'edit') {
-        this.edit.emit({ kind: 'set', path: node.path, value: valueFromInput(form.type, form.text) });
+        this.edit.emit({
+          kind: 'set',
+          path: node.path,
+          value: valueFromInput(form.type, form.text),
+        });
       } else {
         const isObject = node.type === 'object';
         if (isObject && !form.key) throw new EditError('Type a name');
-        if (isObject && node.children.some((c) => c.key === form.key)) throw new EditError(`"${form.key}" already exists here`);
-        this.edit.emit({ kind: 'add', path: node.path, key: isObject ? form.key : null, value: valueFromInput(form.type, form.text) });
+        if (isObject && node.children.some((c) => c.key === form.key))
+          throw new EditError(`"${form.key}" already exists here`);
+        this.edit.emit({
+          kind: 'add',
+          path: node.path,
+          key: isObject ? form.key : null,
+          value: valueFromInput(form.type, form.text),
+        });
       }
     } catch (e) {
       form.error = e instanceof EditError ? e.message : 'Cannot apply this edit';
@@ -443,7 +484,9 @@ export class JsonTreeComponent implements OnChanges, OnDestroy {
     navigator.clipboard
       .writeText(text)
       .then(() => this.snackBar.open(`${label} copied`, '', { duration: 1500 }))
-      .catch(() => this.snackBar.open('Copy failed — clipboard access denied', '', { duration: 2500 }));
+      .catch(() =>
+        this.snackBar.open('Copy failed — clipboard access denied', '', { duration: 2500 }),
+      );
   }
 
   // ── Reveal / scroll ───────────────────────────────────────────────────────
@@ -494,14 +537,16 @@ export class JsonTreeComponent implements OnChanges, OnDestroy {
     const scrolled = vp.measureScrollOffset('top');
     const size = vp.getViewportSize();
     if (top < scrolled) vp.scrollToOffset(top);
-    else if (top + TREE_ROW_HEIGHT > scrolled + size) vp.scrollToOffset(top + TREE_ROW_HEIGHT - size);
+    else if (top + TREE_ROW_HEIGHT > scrolled + size)
+      vp.scrollToOffset(top + TREE_ROW_HEIGHT - size);
   }
 
   // ── Keyboard navigation ───────────────────────────────────────────────────
   onKeydown(event: KeyboardEvent): void {
     if (!this.rows.length || event.ctrlKey || event.metaKey || event.altKey) return;
     const nodeRows = (from: number, step: 1 | -1): number => {
-      for (let i = from + step; i >= 0 && i < this.rows.length; i += step) if (!this.rows[i].closing) return i;
+      for (let i = from + step; i >= 0 && i < this.rows.length; i += step)
+        if (!this.rows[i].closing) return i;
       return -1;
     };
     const current = this.rowIndex(this.ctx.selectedPath);
@@ -572,7 +617,9 @@ export class JsonTreeComponent implements OnChanges, OnDestroy {
     this.rootNodes = [this.createNode(null, this.data, '$', false, collapseState, null)];
     this.applySearch();
 
-    const keep = this.ctx.selectedPath ? this.findChain(this.rootNodes, this.ctx.selectedPath, []) : null;
+    const keep = this.ctx.selectedPath
+      ? this.findChain(this.rootNodes, this.ctx.selectedPath, [])
+      : null;
     if (keep) this.setSelected(keep[keep.length - 1]);
     else this.clearSelection();
   }
