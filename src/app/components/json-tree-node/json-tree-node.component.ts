@@ -1,5 +1,5 @@
-import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
-import { JsonNode, TreeContext } from '../json-tree/json-tree.component';
+import { Component, Input } from '@angular/core';
+import { JsonNode, TreeContext, TreeRow } from '../json-tree/json-tree.component';
 import { escapeHtml } from '../../utils/json-utils';
 
 const MAX_STRING = 120;
@@ -8,15 +8,28 @@ const MAX_STRING = 120;
   selector: 'app-json-tree-node',
   standalone: false,
   templateUrl: './json-tree-node.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './json-tree-node.component.scss',
 })
 export class JsonTreeNodeComponent {
-  @Input() node!: JsonNode;
-  @Input() depth = 0;
+  /**
+   * The line to render. The tree builds new rows on every refresh, so a changed row object is
+   * what tells this OnPush component that its node (collapsed, match, …) may have changed.
+   */
+  @Input() row!: TreeRow;
   @Input() ctx!: TreeContext;
+
+  get node(): JsonNode {
+    return this.row.node;
+  }
+
+  get depth(): number {
+    return this.row.depth;
+  }
+
   /** Renders the closing bracket line of an expanded container instead of the node itself. */
-  @Input() closing = false;
+  get closing(): boolean {
+    return this.row.closing;
+  }
 
   get isContainer(): boolean {
     return this.node.type === 'object' || this.node.type === 'array';

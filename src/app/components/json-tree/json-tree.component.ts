@@ -10,7 +10,8 @@ import {
   Output,
   SimpleChanges,
   ViewChild,
-  ChangeDetectionStrategy,
+  WritableSignal,
+  signal,
 } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { DiffKind } from '../../utils/json-diff';
@@ -50,7 +51,11 @@ export interface JsonNode {
   embedsJson: boolean;
 }
 
-/** Shared, mutable state handed to every node so the recursion needs no event plumbing. */
+/**
+ * Shared state handed to every node so the recursion needs no event plumbing. Rows are OnPush:
+ * the path fields are signals, so a selection or match change repaints the rows that read them.
+ * Everything else changes only together with `refresh()`, which hands every row a new input.
+ */
 export interface TreeContext {
   /** Text to highlight inside values. Empty while a JSONPath is active. */
   query: string;
@@ -60,9 +65,9 @@ export interface TreeContext {
   pathMode: boolean;
   filter: boolean;
   changesOnly: boolean;
-  selectedPath: string | null;
-  activePath: string | null;
-  flashPath: string | null;
+  selectedPath: WritableSignal<string | null>;
+  activePath: WritableSignal<string | null>;
+  flashPath: WritableSignal<string | null>;
   select: (node: JsonNode) => void;
   toggle: (node: JsonNode) => void;
   /** Replaces a string holding JSON with the parsed value. */
@@ -101,7 +106,6 @@ const LARGE_TREE_NODES = 20_000;
   selector: 'app-json-tree',
   standalone: false,
   templateUrl: './json-tree.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './json-tree.component.scss',
 })
 export class JsonTreeComponent implements OnChanges, OnDestroy {
@@ -165,9 +169,9 @@ export class JsonTreeComponent implements OnChanges, OnDestroy {
     pathMode: false,
     filter: false,
     changesOnly: false,
-    selectedPath: null,
-    activePath: null,
-    flashPath: null,
+    selectedPath: signal(null),
+    activePath: signal(null),
+    flashPath: signal(null),
     select: (node) => this.setSelected(node, true),
     toggle: (node) => {
       node.collapsed = !node.collapsed;
@@ -285,7 +289,7 @@ export class JsonTreeComponent implements OnChanges, OnDestroy {
     this.applySearch();
     this.activeIdx = -1;
     if (this.matchPaths.length) this.goTo(0);
-    else this.ctx.activePath = null;
+    else this.ctx.activePath.set(null);
   }
 
   clearQuery(): void {
@@ -309,7 +313,7 @@ export class JsonTreeComponent implements OnChanges, OnDestroy {
     if (!total) return;
     this.activeIdx = (index + total) % total;
     const path = this.matchPaths[this.activeIdx];
-    this.ctx.activePath = path;
+    this.ctx.activePath.set(path);
     this.scrollToPath(path);
   }
 
@@ -353,7 +357,7 @@ export class JsonTreeComponent implements OnChanges, OnDestroy {
   private setSelected(node: JsonNode, notify = false): void {
     if (notify) this.selectionChange.emit(node.path);
     if (this.selected?.path !== node.path) this.form = null;
-    this.ctx.selectedPath = node.path;
+    this.ctx.selectedPath.set(node.path);
     this.selected = node;
     this.selectedEmbedsJson = node.embedsJson && parseEmbedded(node.value) !== undefined;
     const size = () => formatBytes(byteLength(stringifyJson(node.value)));
@@ -372,7 +376,7 @@ export class JsonTreeComponent implements OnChanges, OnDestroy {
     this.form = null;
     this.selected = null;
     this.selectedEmbedsJson = false;
-    this.ctx.selectedPath = null;
+    this.ctx.selectedPath.set(null);
   }
 
   unwrapSelected(): void {
@@ -496,12 +500,9 @@ export class JsonTreeComponent implements OnChanges, OnDestroy {
     chain.slice(0, -1).forEach((n) => (n.collapsed = false));
     this.refresh();
     this.setSelected(chain[chain.length - 1]);
-    this.ctx.flashPath = path;
+    this.ctx.flashPath.set(path);
     this.scrollToPath(path);
-    setTimeout(() => {
-      this.ctx.flashPath = null;
-      this.cdr.markForCheck(); // no zone.js: a timer alone does not trigger rendering
-    }, 1200);
+    setTimeout(() => this.ctx.flashPath.set(null), 1200);
   }
 
   private findChain(nodes: JsonNode[], path: string, trail: JsonNode[]): JsonNode[] | null {
@@ -549,7 +550,7 @@ export class JsonTreeComponent implements OnChanges, OnDestroy {
         if (!this.rows[i].closing) return i;
       return -1;
     };
-    const current = this.rowIndex(this.ctx.selectedPath);
+    const current = this.rowIndex(this.ctx.selectedPath());
     const node = current >= 0 ? this.rows[current].node : null;
     const isContainer = !!node && node.children.length > 0;
     let target = -2; // -2: key not handled
@@ -617,8 +618,9 @@ export class JsonTreeComponent implements OnChanges, OnDestroy {
     this.rootNodes = [this.createNode(null, this.data, '$', false, collapseState, null)];
     this.applySearch();
 
-    const keep = this.ctx.selectedPath
-      ? this.findChain(this.rootNodes, this.ctx.selectedPath, [])
+    const selectedPath = this.ctx.selectedPath();
+    const keep = selectedPath
+      ? this.findChain(this.rootNodes, selectedPath, [])
       : null;
     if (keep) this.setSelected(keep[keep.length - 1]);
     else this.clearSelection();

@@ -60,9 +60,7 @@
     (keydown)="onKeydown($event)">
     <app-json-tree-node
       *cdkVirtualFor="let row of rows; trackBy: trackRow"
-      [node]="row.node"
-      [depth]="row.depth"
-      [closing]="row.closing"
+      [row]="row"
       [ctx]="ctx">
     </app-json-tree-node>
   </cdk-virtual-scroll-viewport>
