@@ -108,7 +108,7 @@ npm run e2e        # end-to-end tests (Playwright, Chromium); run `npx playwrigh
 npm run lint:styles   # Stylelint over the SCSS
 ```
 
-CI (`.github/workflows/ci.yml`) runs the style lint, the unit tests and the production build on every pull request and on pushes to `main`, and the end-to-end tests in a parallel job (the Playwright report is uploaded as an artifact).
+CI (`.github/workflows/ci.yml`) runs the style lint, the unit tests and the production build on every pull request, and the end-to-end tests in a parallel job (the Playwright report is uploaded as an artifact).
 
 The end-to-end tests live in `e2e/`. Playwright starts `ng serve --configuration production` on port 4300 (or reuses one already running there locally). Tests seed the panes through `#s=` share links (`e2e/helpers.ts`), so they need no saved state.
 

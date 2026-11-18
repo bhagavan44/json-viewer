@@ -1,8 +1,6 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
   pull_request:
 
 concurrency:
@@ -25,13 +23,9 @@ jobs:
           fetch-depth: 0
 
       - id: filter
-        env:
-          EVENT: ${{ github.event_name }}
-          BEFORE: ${{ github.event.before }}
         run: |
-          # For a PR, HEAD is the merge commit and HEAD^1 is the base branch.
-          if [ "$EVENT" = pull_request ]; then base=HEAD^1; else base=$BEFORE; fi
-          if git cat-file -e "$base^{commit}" 2>/dev/null && git diff --quiet "$base" HEAD -- \
+          # HEAD is the PR merge commit and HEAD^1 is the base branch.
+          if git diff --quiet HEAD^1 HEAD -- \
             src public e2e angular.json package.json package-lock.json 'tsconfig*.json' \
             playwright.config.ts stylelint.config.mjs .github/workflows/ci.yml; then
             echo "code=false" >> "$GITHUB_OUTPUT"
