@@ -21,6 +21,7 @@ updates:
       monaco:
         patterns:
           - 'monaco-editor'
+          - 'ngx-monaco-editor-v2'
       testing:
         patterns:
           - 'vitest'
