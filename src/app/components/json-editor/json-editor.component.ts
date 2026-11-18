@@ -9,7 +9,6 @@ import {
   Output,
   SimpleChanges,
   ViewChild,
-  ChangeDetectionStrategy,
 } from '@angular/core';
 
 declare const require: any;
@@ -18,7 +17,6 @@ declare const require: any;
   selector: 'app-json-editor',
   standalone: false,
   templateUrl: './json-editor.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './json-editor.component.scss',
 })
 export class JsonEditorComponent implements OnInit, OnChanges, OnDestroy {

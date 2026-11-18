@@ -6,7 +6,6 @@ import {
   Input,
   Output,
   ViewChild,
-  ChangeDetectionStrategy,
 } from '@angular/core';
 
 export interface PaletteCommand {
@@ -22,7 +21,6 @@ export interface PaletteCommand {
   selector: 'app-command-palette',
   standalone: false,
   templateUrl: './command-palette.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './command-palette.component.scss',
 })
 export class CommandPaletteComponent implements AfterViewInit {

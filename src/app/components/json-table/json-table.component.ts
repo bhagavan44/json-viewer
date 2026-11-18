@@ -1,4 +1,4 @@
-import { Component, Input, OnChanges, SimpleChanges, ChangeDetectionStrategy } from '@angular/core';
+import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import {
   JsonTable,
@@ -18,7 +18,6 @@ const PAGE = 200;
   selector: 'app-json-table',
   standalone: false,
   templateUrl: './json-table.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './json-table.component.scss',
 })
 export class JsonTableComponent implements OnChanges {

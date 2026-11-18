@@ -1,11 +1,10 @@
-import { Component, EventEmitter, Input, Output, ChangeDetectionStrategy } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 
 /** The "Save JSON" dialog. The parent owns the name and does the saving. */
 @Component({
   selector: 'app-save-dialog',
   standalone: false,
   templateUrl: './save-dialog.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './save-dialog.component.scss',
 })
 export class SaveDialogComponent {
