@@ -78,15 +78,15 @@ describe('JsonTreeComponent', () => {
     press('ArrowDown'); // $
     press('ArrowDown'); // id
     press('ArrowDown'); // user
-    expect(tree.ctx.selectedPath).toBe('$.user');
+    expect(tree.ctx.selectedPath()).toBe('$.user');
 
     press('ArrowRight'); // expand
     expect(tree.rows.some((r) => r.node.key === 'name')).toBe(true);
     press('ArrowRight'); // into first child
-    expect(tree.ctx.selectedPath).toBe('$.user.name');
+    expect(tree.ctx.selectedPath()).toBe('$.user.name');
 
     press('ArrowLeft'); // up to parent
-    expect(tree.ctx.selectedPath).toBe('$.user');
+    expect(tree.ctx.selectedPath()).toBe('$.user');
     press('ArrowLeft'); // collapse
     expect(tree.rows.some((r) => r.node.key === 'name')).toBe(false);
   });
@@ -153,7 +153,7 @@ describe('JsonTreeComponent', () => {
     fixture.componentRef.setInput('reveal', { path: '$.user.tags[1]' });
     fixture.detectChanges();
     await Promise.resolve();
-    expect(tree.ctx.selectedPath).toBe('$.user.tags[1]');
+    expect(tree.ctx.selectedPath()).toBe('$.user.tags[1]');
     expect(tree.rows.some((r) => r.node.path === '$.user.tags[1]')).toBe(true); // ancestors opened
     expect(handled).toBe(1);
     expect(selected).toEqual([]); // the owner asked for it, so it is not reported back
