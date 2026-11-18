@@ -1,202 +1,64 @@
 <div class="app-container" [class.dark]="isDarkTheme" [class.dragging]="isDragging">
 
-  <!-- Header toolbar -->
-  <mat-toolbar class="app-header">
-    <div class="header-logo">
-      <img class="logo-icon" src="favicon.svg" alt="" width="28" height="28">
-      <span class="app-title">JSON Viewer</span>
-    </div>
-    <div class="view-seg" role="group" aria-label="View mode">
-      <button type="button" [class.on]="viewMode === 'edit'" [attr.aria-pressed]="viewMode === 'edit'" (click)="setViewMode('edit')">
-        <mat-icon>view_column</mat-icon><span>Workspace</span>
-      </button>
-      <button type="button" [class.on]="viewMode === 'compare'" [attr.aria-pressed]="viewMode === 'compare'" (click)="setViewMode('compare')">
-        <mat-icon>compare_arrows</mat-icon><span>Compare</span>
-      </button>
-    </div>
-    <span class="flex-spacer"></span>
-    <div class="header-actions">
-      <button mat-stroked-button [matMenuTriggerFor]="shareMenu" matTooltip="Copy a link that opens both panes">
-        <mat-icon>link</mat-icon>
-        <span class="btn-label">Share</span>
-      </button>
-      <mat-menu #shareMenu="matMenu">
-        <button mat-menu-item (click)="shareLink()">
-          <mat-icon>link</mat-icon><span>Copy share link</span>
-        </button>
-        <button mat-menu-item (click)="shareLink(true)">
-          <mat-icon>visibility_off</mat-icon><span>Copy link, hiding sensitive values</span>
-        </button>
-      </mat-menu>
-      <button mat-stroked-button (click)="openPalette()" matTooltip="Search every action (Ctrl/Cmd+K)">
-        <mat-icon>bolt</mat-icon>
-        <span class="btn-label">Actions</span>
-      </button>
-      <button mat-stroked-button
-        (click)="toggleFilesPanel()"
-        matTooltip="Show or hide saved files"
-        [class.active-btn]="showFilesPanel">
-        <mat-icon
-          [matBadge]="savedFiles.length"
-          [matBadgeHidden]="savedFiles.length === 0"
-          matBadgeSize="small"
-          matBadgeColor="accent">folder_open</mat-icon>
-        <span class="btn-label">Files</span>
-      </button>
-      <button mat-icon-button
-        (click)="toggleTheme()"
-        [matTooltip]="isDarkTheme ? 'Switch to light theme' : 'Switch to dark theme'"
-        class="theme-toggle">
-        <mat-icon>{{ isDarkTheme ? 'light_mode' : 'dark_mode' }}</mat-icon>
-      </button>
-    </div>
-  </mat-toolbar>
+  <app-header
+    [viewMode]="viewMode"
+    (viewModeChange)="setViewMode($event)"
+    [dark]="isDarkTheme"
+    [filesOpen]="showFilesPanel"
+    [fileCount]="savedFiles.length"
+    (share)="shareLink($event)"
+    (openPalette)="openPalette()"
+    (toggleFiles)="toggleFilesPanel()"
+    (toggleTheme)="toggleTheme()">
+  </app-header>
 
   <input #fileInput type="file" class="file-input" accept=".json,.txt,application/json,text/plain" multiple
     aria-hidden="true" tabindex="-1" (change)="onFilesPicked($event)">
 
   <app-command-palette *ngIf="showPalette" [commands]="paletteCommands" (closed)="closePalette()"></app-command-palette>
 
-  <!-- Save Dialog -->
-  <div class="save-dialog-overlay" *ngIf="showSaveDialog" (click)="cancelSave()">
-    <div class="save-dialog" (click)="$event.stopPropagation()">
-      <div class="save-dialog-header">
-        <mat-icon>save</mat-icon>
-        <span>Save JSON</span>
-      </div>
-      <div class="save-dialog-body">
-        <label class="save-label">File name</label>
-        <div class="save-input-row">
-          <input
-            class="save-input"
-            [(ngModel)]="saveFileName"
-            placeholder="Enter file name…"
-            (keydown.enter)="confirmSave()"
-            (keydown.escape)="cancelSave()"
-            autofocus>
-          <button mat-icon-button (click)="saveFileName = generateRandomName()" matTooltip="Generate random name" class="dice-btn">
-            <mat-icon>casino</mat-icon>
-          </button>
-        </div>
-      </div>
-      <div class="save-dialog-actions">
-        <button mat-stroked-button (click)="cancelSave()">Cancel</button>
-        <button mat-flat-button (click)="confirmSave()" [disabled]="!saveFileName.trim()" class="save-confirm-btn">Save</button>
-      </div>
-    </div>
-  </div>
+  <app-save-dialog *ngIf="showSaveDialog"
+    [(name)]="saveFileName"
+    (randomName)="saveFileName = generateRandomName()"
+    (confirmed)="confirmSave()"
+    (cancelled)="cancelSave()">
+  </app-save-dialog>
 
   <div class="workspace">
 
     <!-- Files sidebar (overlay drawer on narrow screens) -->
     <div class="files-panel-backdrop" *ngIf="showFilesPanel && isNarrow" (click)="closeFilesPanel()"></div>
-    <aside class="files-panel" [class.open]="showFilesPanel" aria-label="Saved files">
-      <div class="files-panel-header">
-        <mat-icon>folder_open</mat-icon>
-        <span>Saved files</span>
-        <span class="files-count">{{ savedFiles.length }}</span>
-        <span class="flex-spacer"></span>
-        <button mat-icon-button (click)="closeFilesPanel()" class="sm-btn close-btn" matTooltip="Hide sidebar" aria-label="Hide saved files">
-          <mat-icon>close</mat-icon>
-        </button>
-      </div>
-      <div class="files-search">
-        <mat-icon class="search-icon">search</mat-icon>
-        <input
-          class="search-input"
-          [(ngModel)]="fileSearchQuery"
-          placeholder="Search names and contents…"
-          aria-label="Search saved files">
-        <button mat-icon-button *ngIf="fileSearchQuery" (click)="fileSearchQuery = ''" class="sm-btn clear-search-btn" aria-label="Clear file search">
-          <mat-icon>clear</mat-icon>
-        </button>
-      </div>
-      <div class="files-list">
-        <div *ngIf="filteredFiles.length === 0" class="files-empty">
-          <mat-icon>inbox</mat-icon>
-          <span>{{ fileSearchQuery ? 'No files match' : 'No saved files yet' }}</span>
-          <small *ngIf="!fileSearchQuery">Paste JSON and press Save to keep it here</small>
-        </div>
-        <div *ngFor="let file of filteredFiles"
-             class="file-item"
-             [class.active]="isOpenIn(file, left) || isOpenIn(file, right)"
-             (click)="loadFile(file)">
-          <div class="file-item-main">
-            <ng-container *ngIf="renamingFileId === file.id; else nameDisplay">
-              <input
-                class="rename-input"
-                [(ngModel)]="renameValue"
-                (keydown.enter)="confirmRename(file.id)"
-                (keydown.escape)="cancelRename()"
-                (blur)="confirmRename(file.id)"
-                (click)="$event.stopPropagation()"
-                autofocus>
-            </ng-container>
-            <ng-template #nameDisplay>
-              <mat-icon class="file-icon">insert_drive_file</mat-icon>
-              <span class="file-name">{{ file.name }}</span>
-              <span class="pane-badge" *ngIf="isOpenIn(file, left)" matTooltip="Open in the left pane">L</span>
-              <span class="pane-badge" *ngIf="isOpenIn(file, right)" matTooltip="Open in the right pane">R</span>
-            </ng-template>
-          </div>
-          <div class="file-item-meta">
-            <span class="file-date">{{ formatDate(file.savedAt) }}</span>
-            <span class="file-size">{{ fileSize(file) }}</span>
-          </div>
-          <div class="file-item-actions" (click)="$event.stopPropagation()">
-            <button type="button" class="act-btn pane-open" (click)="openFileIn(file, left, $event)" matTooltip="Open in left pane" aria-label="Open in left pane">L</button>
-            <button type="button" class="act-btn pane-open" (click)="openFileIn(file, right, $event)" matTooltip="Open in right pane" aria-label="Open in right pane">R</button>
-            <button type="button" class="act-btn" (click)="startRename(file, $event)" matTooltip="Rename" aria-label="Rename file">
-              <mat-icon>edit</mat-icon>
-            </button>
-            <button type="button" class="act-btn delete-btn" (click)="deleteFile(file.id, $event)" matTooltip="Delete" aria-label="Delete file">
-              <mat-icon>delete_outline</mat-icon>
-            </button>
-          </div>
-        </div>
-      </div>
-    </aside>
+    <app-files-panel
+      [open]="showFilesPanel"
+      [files]="filteredFiles"
+      [total]="savedFiles.length"
+      [(query)]="fileSearchQuery"
+      [leftFileId]="left.currentFileId"
+      [rightFileId]="right.currentFileId"
+      [renamingId]="renamingFileId"
+      [(renameValue)]="renameValue"
+      (closed)="closeFilesPanel()"
+      (fileOpen)="loadFile($event)"
+      (fileOpenIn)="openFileIn($event.file, $event.side === 'left' ? left : right)"
+      (renameStart)="startRename($event)"
+      (renameConfirm)="confirmRename($event)"
+      (renameCancel)="cancelRename()"
+      (fileDelete)="deleteFile($event.id)">
+    </app-files-panel>
 
     <div class="main">
 
-      <!-- Compare summary bar -->
-      <div class="compare-bar" *ngIf="viewMode === 'compare'">
-        <ng-container *ngIf="diff as d; else compareNotReady">
-          <span class="stat add">+{{ d.added }} added</span>
-          <span class="stat del">−{{ d.removed }} removed</span>
-          <span class="stat chg">~{{ d.changed }} changed</span>
-          <span class="identical" *ngIf="d.changes.length === 0">The two documents are identical.</span>
-          <span class="matched-by" *ngIf="matchArrays && d.arrayKeys.length" matTooltip="Array items were paired by these keys, so inserted or reordered items are not reported as changes">
-            Arrays matched by {{ d.arrayKeys.join(', ') }}
-          </span>
-        </ng-container>
-        <ng-template #compareNotReady>
-          <span class="compare-hint">
-            <mat-icon>info</mat-icon>{{ compareMessage }}
-          </span>
-        </ng-template>
-        <span class="flex-spacer"></span>
-        <span class="ignore-box" [class.invalid]="!!ignoreError">
-          <mat-icon aria-hidden="true">visibility_off</mat-icon>
-          <input type="text" [(ngModel)]="ignoreText" placeholder="Ignore paths, e.g. $..updatedAt"
-            aria-label="Paths to ignore (JSONPath, comma-separated)"
-            [title]="ignoreError || 'JSONPath expressions to leave out of the comparison, separated by commas'">
-        </span>
-        <span class="ignore-error" *ngIf="ignoreError" role="alert">{{ ignoreError }}</span>
-        <label class="check" matTooltip="Pair array items by an id-like key (id, sku, code…) instead of by position">
-          <input type="checkbox" [(ngModel)]="matchArrays" [disabled]="!compareReady"> Match array items by key
-        </label>
-        <label class="check">
-          <input type="checkbox" [(ngModel)]="changesOnly" [disabled]="!compareReady"> Changes only
-        </label>
-        <button type="button" class="bar-btn" (click)="copyPatch()" [disabled]="!compareReady"
-          matTooltip="Copy a JSON Patch (RFC 6902) that turns the left document into the right one. Arrays are patched by position; ignored paths are left out.">
-          <mat-icon>content_copy</mat-icon>JSON Patch
-        </button>
-        <button type="button" class="bar-btn" (click)="swapPanels()" matTooltip="Swap the left and right documents">
-          <mat-icon>swap_horiz</mat-icon>Swap sides
-        </button>
-      </div>
+      <app-compare-bar *ngIf="viewMode === 'compare'"
+        [diff]="diff"
+        [message]="compareMessage"
+        [ready]="compareReady"
+        [(ignoreText)]="ignoreText"
+        [ignoreError]="ignoreError"
+        [(matchArrays)]="matchArrays"
+        [(changesOnly)]="changesOnly"
+        (copyPatch)="copyPatch()"
+        (swap)="swapPanels()">
+      </app-compare-bar>
 
       <!-- Split panels -->
       <div class="panels-container">

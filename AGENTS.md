@@ -17,13 +17,17 @@ npm start                       # dev server, http://localhost:4200
 npm run build                   # production build -> dist/json-viewer/browser
 npm test                        # unit tests (Vitest, watch mode)
 npx ng test --watch=false       # unit tests once, as CI runs them
+npm run lint:styles             # Stylelint over src/**/*.scss
+npm run e2e                     # end-to-end tests (Playwright; `npx playwright install chromium` once)
 ```
 
-Before calling a task done, run the tests and the production build. CI runs both on every PR and on
-pushes to `main`. There is no linter configured.
+Before calling a task done, run the tests and the production build, and `npm run lint:styles` if
+you changed a stylesheet. Run `npm run e2e` too if you changed UI behaviour. CI runs the style lint, the unit tests and the
+build on every PR, plus the end-to-end tests in a separate job.
 
-The build prints bundle-size budget warnings for the initial bundle and `app.scss`. They are
-expected today and are not failures; don't treat them as a regression unless the build errors.
+The build prints a bundle-size budget warning for the initial bundle (Monaco). It is expected today
+and is not a failure; don't treat it as a regression unless the build errors. A component style
+budget warning (over 12 kB) is new, so split the stylesheet into a child component instead.
 
 ## Code conventions
 
@@ -40,6 +44,13 @@ expected today and are not failures; don't treat them as a regression unless the
 - Formatting follows `.prettierrc` (100 columns, single quotes) and `.editorconfig` (2 spaces, final
   newline, no trailing whitespace). Some existing files aren't fully formatted, so don't reformat code you aren't
   changing.
+- **Styles:** use the tokens in `src/styles.scss` (`--accent`, `rgba(var(--accent-rgb), …)`,
+  `--accent-hover`, `--color-error` / `-success` / `-warning`, `--font-mono`) and the theme
+  colours on `.app-container` in `app.scss`, not raw hex values or `var()` fallbacks. Shared
+  mixins (`icon-size()`, `center-icon`, `truncate`, `bar-header`) are in
+  `src/styles/_mixins.scss`; `.flex-spacer` is a global utility.
+  Customise Material with its `mat.*-overrides()` token mixins, not `!important`. Stylelint
+  enforces the last two rules.
 - Use the existing code style, naming and folder structure. Don't introduce new patterns without
   discussing it first.
 
@@ -54,15 +65,19 @@ expected today and are not failures; don't treat them as a regression unless the
   through plain `JSON.parse` / `JSON.stringify` in those paths.
 - **Edits keep the user's formatting.** `utils/json-edit.ts` changes only the edited part of the
   text. Don't replace that with re-serialising the whole document.
-- **Header buttons** are styled in `app.scss` under `.app-header .header-actions` and override
-  Material with `!important`. Check the result visually after changing them, including the narrow
-  layout (below 768px, labels are hidden).
+- **Header buttons** are styled in `components/app-header/app-header.component.scss` under
+  `.app-header .header-actions` through
+  Material's token mixins. `mat-toolbar` resets the outlined-button text colour on each button, so
+  that token is set on the button itself. Check the result visually after changing them, including
+  the narrow layout (below 768px, labels are hidden).
 
 ## Testing
 
 - Tests are Vitest specs run through `ng test`, using jsdom and `fake-indexeddb`.
 - Add or update a spec with every change to a util. UI-only style changes need a manual check in the
   running app.
+- End-to-end tests are Playwright specs in `e2e/`. Seed documents with `openShared()` from
+  `e2e/helpers.ts` rather than typing into Monaco.
 
 ## Git
 

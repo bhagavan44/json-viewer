@@ -1,0 +1,190 @@
+@use '@angular/material' as mat;
+@use '../../../styles/mixins' as *;
+
+// The host doesn't render a box: the toolbar stays a flex item of .app-container, so its
+// z-index keeps its shadow above the workspace.
+:host {
+  display: contents;
+}
+
+.app-header {
+  @include mat.toolbar-overrides(
+    (
+      container-background-color: var(--header-bg),
+      container-text-color: var(--header-color),
+      standard-height: 52px,
+      mobile-height: 52px,
+    )
+  );
+  padding: 0 12px 0 16px;
+  flex-shrink: 0;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+
+  .header-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .logo-icon {
+      width: 28px;
+      height: 28px;
+      display: block;
+    }
+
+    .app-title {
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      color: var(--header-color);
+    }
+  }
+
+  .header-actions {
+    @include mat.button-overrides(
+      (
+        outlined-container-height: 32px,
+        outlined-horizontal-padding: 12px,
+        outlined-outline-color: rgba(255, 255, 255, 0.2),
+        outlined-label-text-size: 12px,
+      )
+    );
+    @include mat.icon-button-overrides(
+      (
+        state-layer-size: 32px,
+        icon-size: 20px,
+        icon-color: rgba(255, 255, 255, 0.8),
+      )
+    );
+    display: flex;
+    align-items: center;
+    gap: 4px;
+
+    .header-divider {
+      width: 1px;
+      height: 20px;
+      background: rgba(255, 255, 255, 0.15);
+      margin: 0 4px;
+    }
+
+    .active-btn {
+      background: rgba(var(--accent-rgb), 0.15);
+    }
+
+    button[mat-stroked-button] {
+      // Set on the button itself: mat-toolbar resets this token on buttons inside it.
+      @include mat.button-overrides((outlined-label-text-color: rgba(255, 255, 255, 0.85)));
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      line-height: 1;
+      min-width: unset;
+
+      mat-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        @include icon-size(16px);
+        margin: 0;
+      }
+
+      .btn-label {
+        line-height: 1;
+      }
+
+      &:hover {
+        @include mat.button-overrides((outlined-outline-color: rgba(255, 255, 255, 0.4)));
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      &[disabled] {
+        opacity: 0.35;
+        pointer-events: none;
+      }
+    }
+
+    .theme-toggle {
+      @include center-icon;
+      margin-left: 4px;
+
+      mat-icon {
+        width: 20px;
+        height: 20px;
+        font-size: 20px;
+        margin: 0;
+      }
+    }
+
+    .btn-label {
+      display: inline;
+    }
+
+    @media (max-width: 768px) {
+      .btn-label {
+        display: none;
+      }
+
+      @include mat.button-overrides((outlined-horizontal-padding: 8px));
+
+      button[mat-stroked-button] {
+        gap: 0;
+      }
+    }
+  }
+}
+
+// ─── View switch (Workspace / Compare) ───────────────────────────────────────
+.view-seg {
+  display: inline-flex;
+  margin-left: 24px;
+  padding: 2px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+
+  button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 14px;
+    border: 0;
+    border-radius: 6px;
+    background: none;
+    color: rgba(255, 255, 255, 0.65);
+    font: 500 12.5px 'Roboto', sans-serif;
+    cursor: pointer;
+
+    mat-icon {
+      @include icon-size(16px);
+    }
+
+    &:hover {
+      color: #fff;
+    }
+
+    &.on {
+      background: rgba(var(--accent-rgb), 0.24);
+      color: #fff;
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 1px;
+    }
+  }
+
+  @media (max-width: 640px) {
+    margin-left: 8px;
+    button span {
+      display: none;
+    }
+  }
+}
+
+// ─── Very narrow screens: keep the whole header on one row ───────────────────
+@media (max-width: 480px) {
+  .app-header .app-title {
+    display: none;
+  }
+}

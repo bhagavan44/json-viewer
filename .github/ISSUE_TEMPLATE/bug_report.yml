@@ -1,0 +1,74 @@
+name: Bug report
+description: Something doesn't work as expected
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Please search the [existing issues](https://github.com/bhagavan44/json-viewer/issues) first.
+        **Don't paste private data.** Remove secrets and personal details from any JSON you share.
+        Security problems go through [private reporting](https://github.com/bhagavan44/json-viewer/security/advisories/new) instead.
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: A clear description of the bug.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Paste the JSON below into the left pane
+        2. Switch to Tree view
+        3. Search for ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: sample
+    attributes:
+      label: Sample JSON or share link
+      description: A minimal document that shows the problem, or a Share link (use *Copy link, hiding sensitive values*).
+      render: json
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Editor
+        - Tree
+        - Table
+        - Compare
+        - Validate (JSON Schema)
+        - JSONPath search
+        - Saved files
+        - Share links
+        - Command palette
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and version
+      placeholder: Chrome 131, Firefox 133, Safari 18.2 ...
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: Windows 11, macOS 15, Ubuntu 24.04 ...
+  - type: textarea
+    id: logs
+    attributes:
+      label: Console errors
+      description: Any errors from the browser's developer console.
+      render: text
