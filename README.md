@@ -114,6 +114,12 @@ The end-to-end tests live in `e2e/`. Playwright starts `ng serve --configuration
 
 The production build is plain static files and can be served from any static host (it is deployed on Vercel).
 
+### Releases and versioning
+
+Versions are worked out from the [Conventional Commits](https://www.conventionalcommits.org/) on `main` by [release-please](https://github.com/googleapis/release-please) (`.github/workflows/release.yml`). After each push to `main` it keeps a release pull request open that bumps the version in `package.json` and adds the changes to `CHANGELOG.md`. Merging that pull request tags the release (`vX.Y.Z`) and publishes it on GitHub. Before 1.0, `feat` bumps the minor version, `fix` and `perf` the patch version, and a breaking change (`feat!:` or a `BREAKING CHANGE:` footer) the minor version.
+
+The header shows the version from `package.json` (`utils/app-version.ts`), linked to its release notes.
+
 ### Layout
 
 ```
@@ -142,6 +148,7 @@ src/app/
     json-convert.ts, json-schema.ts   YAML, TypeScript, C# and JSON Schema output
     json-error.ts                  Parse error locations
     share-link.ts                  Share link encoding
+    app-version.ts                 App version (from package.json) and its release link
 ```
 
 ### Things to know
