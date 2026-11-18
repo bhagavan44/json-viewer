@@ -1,4 +1,4 @@
-import { stripUrlHash } from './analytics';
+import { isLocalHost, stripUrlHash } from './analytics';
 
 describe('analytics', () => {
   it('removes the URL hash, where share links keep the document', () => {
@@ -13,5 +13,14 @@ describe('analytics', () => {
   it('leaves a URL without a hash unchanged', () => {
     const event = { url: 'https://example.com/path?x=1' };
     expect(stripUrlHash(event)).toBe(event);
+  });
+
+  it('recognises local hosts and nothing else', () => {
+    for (const host of ['localhost', 'app.localhost', '127.0.0.1', '[::1]']) {
+      expect(isLocalHost(host)).toBe(true);
+    }
+    for (const host of ['json-viewer.vercel.app', 'example.com', 'notlocalhost.com']) {
+      expect(isLocalHost(host)).toBe(false);
+    }
   });
 });
