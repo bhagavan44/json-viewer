@@ -23,9 +23,7 @@
     "@angular/router": "^22.2.6",
     "@vercel/analytics": "^2.0.1",
     "monaco-editor": "^0.56.0",
-    "ngx-monaco-editor-v2": "^22.0.5",
     "rxjs": "~7.8.0",
-    "split.js": "^1.6.5",
     "tslib": "^2.3.0"
   },
   "devDependencies": {
