@@ -2,7 +2,7 @@ import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { FormsModule } from '@angular/forms';
 import { MatMenuModule } from '@angular/material/menu';
-import { App, SavedFile, splitJsonPaths } from './app';
+import { App, LARGE_TEXT_CHARS, PARSE_DEBOUNCE_MS, SavedFile, splitJsonPaths } from './app';
 import { SHARE_HASH_PREFIX, encodeShare } from './utils/share-link';
 
 const file = (id: string, name: string, content: string): SavedFile => ({ id, name, content, savedAt: Date.now() });
@@ -190,6 +190,60 @@ describe('App', () => {
     expect(app.panelSize(app.left)).toBe('13 B'); // 12 characters, "é" takes 2 bytes
     app.onTextChange('{}', app.left);
     expect(app.panelLines(app.left)).toBe(1);
+  });
+
+  describe('parsing large documents while typing', () => {
+    /** A valid document longer than LARGE_TEXT_CHARS whose `n` field is `n`. */
+    const large = (n: number) => `{"n":${n},"pad":"${'x'.repeat(LARGE_TEXT_CHARS)}"}`;
+
+    afterEach(() => vi.useRealTimers());
+
+    it('parses small text immediately', async () => {
+      const app = await create();
+      vi.useFakeTimers();
+      app.onTextChange('{"a":1}', app.left);
+      expect(app.left.parsedJson).toEqual({ a: 1 });
+    });
+
+    it('parses large text only after typing pauses', async () => {
+      const app = await create();
+      vi.useFakeTimers();
+      app.onTextChange(large(1), app.left);
+      expect(app.left.jsonText).toBe(large(1));
+      expect(app.left.parsedJson).toBeNull();
+
+      vi.advanceTimersByTime(PARSE_DEBOUNCE_MS - 1);
+      app.onTextChange(large(2), app.left);
+      vi.advanceTimersByTime(PARSE_DEBOUNCE_MS - 1);
+      expect(app.left.parsedJson).toBeNull();
+
+      vi.advanceTimersByTime(1);
+      expect(app.left.isValid).toBe(true);
+      expect(app.left.parsedJson.n).toBe(2);
+    });
+
+    it('formats the latest text right after typing', async () => {
+      const app = await create();
+      vi.useFakeTimers();
+      app.onTextChange(large(1), app.left);
+      vi.advanceTimersByTime(PARSE_DEBOUNCE_MS);
+      app.onTextChange(large(2), app.left);
+
+      app.formatJson(app.left);
+
+      expect(app.left.jsonText).toContain('"n": 2');
+      vi.advanceTimersByTime(PARSE_DEBOUNCE_MS);
+      expect(app.left.jsonText).toContain('"n": 2');
+    });
+
+    it('drops a pending parse when the text is replaced', async () => {
+      const app = await create();
+      vi.useFakeTimers();
+      app.onTextChange(large(1), app.left);
+      app.onTextChange('{"a":1}', app.left);
+      vi.advanceTimersByTime(PARSE_DEBOUNCE_MS);
+      expect(app.left.parsedJson).toEqual({ a: 1 });
+    });
   });
 
   describe('embedded JSON', () => {

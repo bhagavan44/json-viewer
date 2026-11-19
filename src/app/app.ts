@@ -169,6 +169,10 @@ interface Session {
 }
 /** Larger files are refused: they would freeze the editor and cannot be kept in browser storage. */
 const MAX_OPEN_BYTES = 25 * 1024 * 1024;
+/** Above this size, parsing while typing waits until the user pauses. */
+export const LARGE_TEXT_CHARS = 200_000;
+/** How long typing must pause before a large document is parsed again. */
+export const PARSE_DEBOUNCE_MS = 250;
 
 @Component({
   selector: 'app-root',
@@ -275,6 +279,8 @@ export class App implements DoCheck, OnDestroy {
   ngOnDestroy(): void {
     this.unwatchFiles?.();
     clearTimeout(this.sessionTimer);
+    for (const timer of this.parseTimers.values()) clearTimeout(timer);
+    this.parseTimers.clear();
   }
 
   private assignFile(file: SavedFile, panel: PanelState): void {
@@ -287,13 +293,35 @@ export class App implements DoCheck, OnDestroy {
     this.activePanel = panel;
   }
 
+  /** Parses scheduled while typing in a large document, per pane. */
+  private parseTimers = new Map<PanelState, ReturnType<typeof setTimeout>>();
+
   onTextChange(text: string, panel: PanelState): void {
     panel.jsonText = text;
     this.activePanel = panel;
-    this.parsePanel(panel);
+    if (text.length <= LARGE_TEXT_CHARS) {
+      this.parsePanel(panel);
+      return;
+    }
+    // Parsing a large document on every keystroke stalls typing: wait for a pause.
+    clearTimeout(this.parseTimers.get(panel));
+    this.parseTimers.set(
+      panel,
+      setTimeout(() => {
+        this.parsePanel(panel);
+        this.cdr.markForCheck();
+      }, PARSE_DEBOUNCE_MS),
+    );
+  }
+
+  /** Runs a parse still waiting for a typing pause, so the pane's parsed state matches its text. */
+  private ensureParsed(...panels: PanelState[]): void {
+    for (const panel of panels) if (this.parseTimers.has(panel)) this.parsePanel(panel);
   }
 
   private parsePanel(panel: PanelState): void {
+    clearTimeout(this.parseTimers.get(panel));
+    this.parseTimers.delete(panel);
     const text = panel.jsonText;
     panel.errorLocation = null;
     if (!text.trim()) {
@@ -315,18 +343,21 @@ export class App implements DoCheck, OnDestroy {
   }
 
   formatJson(panel: PanelState): void {
+    this.ensureParsed(panel);
     if (!panel.isValid || panel.parsedJson === null) return;
     panel.jsonText = stringifyJson(panel.parsedJson, 2);
     this.snackBar.open('JSON formatted', '', { duration: 1500 });
   }
 
   minifyJson(panel: PanelState): void {
+    this.ensureParsed(panel);
     if (!panel.isValid || panel.parsedJson === null) return;
     panel.jsonText = stringifyJson(panel.parsedJson);
     this.snackBar.open('JSON minified', '', { duration: 1500 });
   }
 
   sortKeys(panel: PanelState): void {
+    this.ensureParsed(panel);
     if (!panel.isValid || panel.parsedJson === null) return;
     const sort = (v: any): any =>
       Array.isArray(v)
@@ -356,6 +387,7 @@ export class App implements DoCheck, OnDestroy {
    * text changes, so formatting is kept. The snackbar offers Undo.
    */
   applyTreeEdit(panel: PanelState, edit: TreeEdit): void {
+    this.ensureParsed(panel);
     const before = panel.jsonText;
     let text: string;
     let focus: string;
@@ -410,6 +442,7 @@ export class App implements DoCheck, OnDestroy {
   // ── Sensitive data ─────────────────────────────────────────────────────────
   /** Copies the pane's JSON with passwords, tokens, emails, card numbers... hidden. */
   copyRedacted(panel: PanelState): void {
+    this.ensureParsed(panel);
     if (!this.isReady(panel)) return;
     const r = redact(panel.parsedJson);
     navigator.clipboard
@@ -430,6 +463,7 @@ export class App implements DoCheck, OnDestroy {
 
   /** Hides sensitive values in the pane itself; the snackbar offers Undo. */
   redactPane(panel: PanelState): void {
+    this.ensureParsed(panel);
     if (!this.isReady(panel)) return;
     const r = redact(panel.parsedJson);
     if (!r.count) {
@@ -450,6 +484,7 @@ export class App implements DoCheck, OnDestroy {
 
   /** Replaces the string at `path` with the JSON it holds (e.g. a message body). */
   unwrapAt(panel: PanelState, path: string): void {
+    this.ensureParsed(panel);
     if (!this.isReady(panel)) return;
     let changed = false;
     const doc = replaceAt(panel.parsedJson, path, (v) => {
@@ -468,6 +503,7 @@ export class App implements DoCheck, OnDestroy {
 
   /** Replaces every string in the document that holds JSON. */
   unwrapAllIn(panel: PanelState): void {
+    this.ensureParsed(panel);
     if (!this.isReady(panel)) return;
     const { value, count } = unwrapAll(panel.parsedJson);
     if (!count) {
@@ -498,6 +534,7 @@ export class App implements DoCheck, OnDestroy {
 
   /** Applies the pane's fix; the snackbar offers Undo. */
   applyFix(panel: PanelState): void {
+    this.ensureParsed(panel);
     const fix = this.textFix(panel);
     if (!fix) return;
     const before = panel.jsonText;
@@ -556,6 +593,7 @@ export class App implements DoCheck, OnDestroy {
 
   /** Switches the pane to its editor and puts the cursor on the parse error. */
   jumpToError(panel: PanelState): void {
+    this.ensureParsed(panel);
     const loc = panel.errorLocation;
     if (!loc) return;
     this.viewMode = 'edit';
@@ -565,11 +603,13 @@ export class App implements DoCheck, OnDestroy {
   }
 
   togglePanelMode(panel: PanelState): void {
+    this.ensureParsed(panel);
     panel.mode = panel.mode === 'editor' ? 'tree' : 'editor';
   }
 
   /** Switches the pane's view and shows the same place in the new view. */
   setPanelMode(panel: PanelState, mode: PanelMode): void {
+    this.ensureParsed(panel);
     panel.mode = mode;
     this.activePanel = panel;
     if (panel.focusPath) this.navigateTo(panel, panel.focusPath);
@@ -655,6 +695,7 @@ export class App implements DoCheck, OnDestroy {
   // ── Compare ───────────────────────────────────────────────────────────────
   setViewMode(mode: 'edit' | 'compare'): void {
     if (this.viewMode === mode) return;
+    this.ensureParsed(this.left, this.right);
     this.viewMode = mode;
     if (mode === 'compare') this.changesOnly = false;
   }
@@ -737,6 +778,7 @@ export class App implements DoCheck, OnDestroy {
 
   /** Copies an RFC 6902 patch that turns the left document into the right one. */
   copyPatch(): void {
+    this.ensureParsed(this.left, this.right);
     if (!this.compareReady) return;
     void this.diff; // resolves the ignored paths
     const ignored = new Set([...(this.ignoreSets?.left ?? []), ...(this.ignoreSets?.right ?? [])]);
@@ -761,6 +803,7 @@ export class App implements DoCheck, OnDestroy {
   private schemaMarks: { errors: SchemaError[]; marks: Record<string, DiffKind> } | null = null;
 
   startValidation(docSide: 'left' | 'right'): void {
+    this.ensureParsed(this.left, this.right);
     this.validationDoc = docSide;
     this.viewMode = 'edit';
   }
@@ -870,6 +913,7 @@ export class App implements DoCheck, OnDestroy {
   }
 
   swapPanels(): void {
+    this.ensureParsed(this.left, this.right);
     const fields: (keyof PanelState)[] = [
       'jsonText',
       'parsedJson',
@@ -1188,6 +1232,7 @@ export class App implements DoCheck, OnDestroy {
   /** Copies a link that reopens both panes (and the Compare view) for whoever opens it. */
   /** Copies a link that reopens both panes. With `hideSensitive`, the documents are redacted first. */
   async shareLink(hideSensitive = false): Promise<void> {
+    this.ensureParsed(this.left, this.right);
     let left = this.left.jsonText;
     let right = this.right.jsonText;
     if (!left.trim() && !right.trim()) {
@@ -1349,6 +1394,7 @@ export class App implements DoCheck, OnDestroy {
   /** Commands apply to the active pane; the pane name is shown as a hint. */
   private buildCommands(): PaletteCommand[] {
     const p = this.activePanel ?? this.left;
+    this.ensureParsed(this.left, this.right);
     const pane = p === this.left ? 'Left' : 'Right';
     const ready = this.isReady(p);
     const cmds: PaletteCommand[] = [];
@@ -1447,6 +1493,7 @@ export class App implements DoCheck, OnDestroy {
   }
 
   private copyConverted(panel: PanelState, label: string, convert: (value: any) => string): void {
+    this.ensureParsed(panel);
     navigator.clipboard
       .writeText(convert(panel.parsedJson))
       .then(() => this.snackBar.open(`Copied as ${label}`, '', { duration: 1800 }))
