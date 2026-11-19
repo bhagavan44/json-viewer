@@ -2,7 +2,9 @@ import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { FormsModule } from '@angular/forms';
 import { MatMenuModule } from '@angular/material/menu';
-import { App, LARGE_TEXT_CHARS, PARSE_DEBOUNCE_MS, SavedFile, splitJsonPaths } from './app';
+import { App, LARGE_TEXT_CHARS, PARSE_DEBOUNCE_MS, SavedFile, WORKER_MIN_CHARS } from './app';
+import { LosslessNumber } from './utils/json-parse';
+import { JsonWorkerMessage, handleJsonRequest } from './utils/json-worker-handler';
 import { SHARE_HASH_PREFIX, encodeShare } from './utils/share-link';
 
 const file = (id: string, name: string, content: string): SavedFile => ({ id, name, content, savedAt: Date.now() });
@@ -426,10 +428,6 @@ describe('App', () => {
   });
 
   describe('compare: ignored paths and JSON Patch', () => {
-    it('splits JSONPath lists on top-level commas only', () => {
-      expect(splitJsonPaths(" $..updatedAt, $['a,b'], $.x[0,1] ,")).toEqual(['$..updatedAt', "$['a,b']", '$.x[0,1]']);
-    });
-
     it('leaves ignored paths out of the comparison, and explains a bad path', async () => {
       const app = await create();
       app.onTextChange('{"id":1,"updatedAt":"a","items":[{"stamp":1,"q":1}]}', app.left);
@@ -469,6 +467,78 @@ describe('App', () => {
       first.ignoreText = '$..updatedAt';
       first.persistSession();
       expect((await create()).ignoreText).toBe('$..updatedAt');
+    });
+  });
+
+  describe('large documents in the worker', () => {
+    /** Stands in for the JSON worker: runs the same handler, replying asynchronously. */
+    class InProcessWorker extends EventTarget {
+      postMessage({ id, request }: JsonWorkerMessage): void {
+        const data = { id, reply: handleJsonRequest(structuredClone(request)) };
+        setTimeout(() => this.dispatchEvent(new MessageEvent('message', { data })));
+      }
+      terminate(): void {}
+    }
+
+    // Each side stays under LARGE_TEXT_CHARS (parsed at once) but together they reach the worker.
+    const pad = 'x'.repeat(WORKER_MIN_CHARS / 2);
+    const doc = (big: string, v: unknown) => `{"big":${big},"v":${JSON.stringify(v)},"pad":"${pad}"}`;
+
+    beforeEach(() => vi.stubGlobal('Worker', InProcessWorker));
+    afterEach(() => vi.unstubAllGlobals());
+
+    it('compares in the worker and fills in the changed values', async () => {
+      const app = await create();
+      app.onTextChange(doc('12345678901234567890', 1), app.left);
+      app.onTextChange(doc('12345678901234567891', 2), app.right);
+
+      expect(app.diff).toBeNull();
+      expect(app.diffPending).toBe(true);
+      await vi.waitFor(() => expect(app.diff).not.toBeNull());
+
+      expect(app.diffPending).toBe(false);
+      const [big, v] = app.diff!.changes;
+      expect(big).toMatchObject({ path: '$.big', kind: 'chg' });
+      expect(big.before).toBeInstanceOf(LosslessNumber);
+      expect(String(big.after)).toBe('12345678901234567891');
+      expect(v).toEqual({ path: '$.v', kind: 'chg', before: 1, after: 2 });
+      app.setViewMode('compare');
+      expect(app.treeMarks(app.left)).toEqual({ '$.big': 'chg', '$.v': 'chg' });
+    });
+
+    it('keeps only the latest comparison when the options change while it runs', async () => {
+      const app = await create();
+      app.onTextChange(doc('1', 1), app.left);
+      app.onTextChange(doc('2', 2), app.right);
+      void app.diff;
+      app.ignoreText = '$.big, nope';
+      void app.diff;
+      app.ignoreText = '$.big';
+      expect(app.diff).toBeNull();
+
+      await vi.waitFor(() => expect(app.diff).not.toBeNull());
+      expect(app.diff!.changes.map((c) => c.path)).toEqual(['$.v']);
+      expect(app.ignoreError).toBeNull();
+    });
+
+    it('validates in the worker', async () => {
+      const app = await create();
+      app.onTextChange(doc('1', 1), app.left);
+      app.onTextChange(`{"type":"object","properties":{"v":{"type":"string"}},"description":"${pad}"}`, app.right);
+      app.startValidation('left');
+
+      expect(app.validation).toMatchObject({ docSide: 'left', pending: true });
+      await vi.waitFor(() => expect(app.validation!.result).toBeDefined());
+      expect(app.validation!.pending).toBeUndefined();
+      expect(app.validation!.result!.errors.map((e) => e.path)).toEqual(['$.v']);
+    });
+
+    it('still compares small documents at once', async () => {
+      const app = await create();
+      app.onTextChange('{"a":1}', app.left);
+      app.onTextChange('{"a":2}', app.right);
+      expect(app.diff!.changed).toBe(1);
+      expect(app.diffPending).toBe(false);
     });
   });
 

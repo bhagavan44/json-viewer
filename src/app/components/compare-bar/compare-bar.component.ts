@@ -11,6 +11,8 @@ import { DiffResult } from '../../utils/json-diff';
 export class CompareBarComponent {
   /** The comparison, or null when the two panes can't be compared yet. */
   @Input() diff: DiffResult | null = null;
+  /** The comparison is still running (in the worker); shown when `diff` is null. */
+  @Input() pending = false;
   /** Why there is no comparison, shown when `diff` is null. */
   @Input() message = '';
   /** Both panes hold valid JSON. */

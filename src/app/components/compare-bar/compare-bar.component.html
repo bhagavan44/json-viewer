@@ -9,6 +9,11 @@
     </span>
   </ng-container>
   <ng-template #compareNotReady>
+    <span class="compare-hint" *ngIf="pending; else notReady" role="status">
+      <mat-icon>hourglass_empty</mat-icon>Comparing…
+    </span>
+  </ng-template>
+  <ng-template #notReady>
     <span class="compare-hint">
       <mat-icon>info</mat-icon>{{ message }}
     </span>

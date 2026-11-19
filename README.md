@@ -131,9 +131,14 @@ src/app/
     json-tree-node/                One fixed-height row of the tree
     json-table/                    Table view: array picker, sort, filter, CSV
     command-palette/               Ctrl/Cmd+K palette
+  workers/
+    json.worker.ts                 Web Worker: Compare and schema validation of large documents
   utils/
     json-parse.ts                  Lossless number parsing
     json-diff.ts                   Structural diff, with array items matched by key
+    json-compare.ts                Compare with ignored paths, schema validation, diff values by path
+    json-worker-handler.ts         Worker requests and replies (runs inside the worker)
+    json-worker-client.ts          Sends work to the worker; the latest request wins
     json-unwrap.ts                 JSON embedded in strings, escaped JSON
     json-locate.ts                 Text offset ↔ path, breadcrumb steps
     json-schema-validate.ts        JSON Schema validation
@@ -155,6 +160,7 @@ src/app/
 
 - **The app runs without zone.js** (the Angular 22 default). State changed inside a promise or timer is not rendered until something calls `markForCheck()`, so call it after async updates.
 - The tree renders only the rows in view (CDK virtual scroll), so every row must be exactly `TREE_ROW_HEIGHT` px tall (`json-tree.component.ts` and `json-tree-node.component.scss`).
+- Above 200,000 characters (both documents together), Compare and schema validation run in a Web Worker (`workers/json.worker.ts`), and smaller documents are still handled on the main thread. The worker is sent the text and parses it itself, because lossless numbers don't survive the copy between threads. For the same reason a diff comes back without its values, which `withDiffValues()` looks up again by path. Unit tests run without a worker (jsdom has none). If the worker fails, the app falls back to the main thread.
 - Node paths use one format everywhere (`$`, `$.items[1].qty`, `$["a b"]`): the tree, the diff, JSONPath results and "Copy path" all share `childPath()` in `json-utils.ts`.
 
 ## Contributing
