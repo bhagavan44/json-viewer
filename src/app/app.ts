@@ -278,7 +278,7 @@ export class App implements DoCheck, OnDestroy {
     typeof Worker === 'undefined'
       ? null
       : new JsonWorkerClient(
-          () => new Worker(new URL('./workers/json.worker', import.meta.url), { type: 'module' }),
+          () => new Worker(new URL('./json.worker', import.meta.url), { type: 'module' }),
         );
 
   onTextChange(text: string, panel: PanelState): void {
