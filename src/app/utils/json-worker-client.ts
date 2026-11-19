@@ -9,14 +9,16 @@ import {
 export type ReplyFor<R extends JsonWorkerRequest> = Extract<JsonWorkerReply, { op: R['op'] }>;
 
 interface Pending {
-  op: JsonWorkerRequest['op'];
+  request: JsonWorkerRequest;
   resolve: (reply: JsonWorkerReply | null) => void;
   reject: (error: Error) => void;
 }
 
 /**
  * Sends requests to the JSON worker and matches replies by id. Per operation the latest
- * request wins: an older one still running resolves with `null` as soon as a newer one is sent.
+ * request wins: an older one still running resolves with `null` as soon as a newer one is sent,
+ * and the worker is restarted so it doesn't spend time finishing work nobody wants. Requests of
+ * the other operations are sent again to the new worker.
  * If the worker fails, pending requests reject and `available` turns false, so callers can
  * fall back to doing the work themselves.
  */
@@ -34,28 +36,42 @@ export class JsonWorkerClient {
 
   run<R extends JsonWorkerRequest>(request: R): Promise<ReplyFor<R> | null> {
     if (this.failed) return Promise.reject(new Error('The JSON worker is not available'));
+    let superseded = false;
     for (const [id, p] of this.pending) {
-      if (p.op !== request.op) continue;
+      if (p.request.op !== request.op) continue;
       this.pending.delete(id);
       p.resolve(null);
+      superseded = true;
+    }
+    if (superseded && this.worker) {
+      // The worker handles one message at a time, so a replaced request would still run in full.
+      this.worker.terminate();
+      this.worker = null;
     }
     let worker: Worker;
     try {
-      worker = this.worker ??= this.start();
+      if (!this.worker) {
+        worker = this.worker = this.start();
+        for (const [id, p] of this.pending) this.post(worker, id, p.request);
+      } else worker = this.worker;
     } catch (e) {
-      this.failed = true;
+      this.fail(e instanceof Error ? e : new Error(String(e)));
       return Promise.reject(e instanceof Error ? e : new Error(String(e)));
     }
     const id = this.nextId++;
     return new Promise<ReplyFor<R> | null>((resolve, reject) => {
       this.pending.set(id, {
-        op: request.op,
+        request,
         resolve: resolve as (reply: JsonWorkerReply | null) => void,
         reject,
       });
-      const message: JsonWorkerMessage = { id, request };
-      worker.postMessage(message);
+      this.post(worker, id, request);
     });
+  }
+
+  private post(worker: Worker, id: number, request: JsonWorkerRequest): void {
+    const message: JsonWorkerMessage = { id, request };
+    worker.postMessage(message);
   }
 
   /** Stops the worker; pending requests resolve with `null`. */

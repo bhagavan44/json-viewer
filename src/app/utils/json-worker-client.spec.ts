@@ -30,29 +30,33 @@ class FakeWorker extends EventTarget {
 }
 
 describe('JsonWorkerClient', () => {
-  let worker: FakeWorker;
-  let created: number;
+  let workers: FakeWorker[];
+  /** Whether workers start holding their messages until `flush()`. */
+  let hold: boolean;
   let client: JsonWorkerClient;
+  const latest = () => workers[workers.length - 1];
 
   beforeEach(() => {
-    worker = new FakeWorker();
-    created = 0;
+    workers = [];
+    hold = false;
     client = new JsonWorkerClient(() => {
-      created++;
-      return worker as unknown as Worker;
+      const w = new FakeWorker();
+      w.auto = !hold;
+      workers.push(w);
+      return w as unknown as Worker;
     });
   });
 
   it('starts the worker on the first request and resolves with its reply', async () => {
-    expect(created).toBe(0);
+    expect(workers).toHaveLength(0);
     const reply = await client.run({ op: 'validate', doc: '1', schema: '{"type":"number"}' });
     expect(reply?.result?.errors).toEqual([]);
     await client.run({ op: 'validate', doc: '1', schema: '{}' });
-    expect(created).toBe(1);
+    expect(workers).toHaveLength(1);
   });
 
   it('lets the latest request of the same kind win', async () => {
-    worker.auto = false;
+    hold = true;
     const first = client.run({ op: 'validate', doc: '1', schema: '{}' });
     const diff = client.run({
       op: 'diff',
@@ -63,9 +67,28 @@ describe('JsonWorkerClient', () => {
     });
     const second = client.run({ op: 'validate', doc: '"x"', schema: '{"type":"number"}' });
     expect(await first).toBeNull();
-    worker.flush();
+    latest().flush();
     expect((await second)?.result?.errors).toHaveLength(1);
     expect((await diff)?.result.changed).toBe(1);
+  });
+
+  it('restarts the worker instead of letting it finish a replaced request', () => {
+    hold = true;
+    void client.run({ op: 'validate', doc: '1', schema: '{}' });
+    void client.run({ op: 'diff', left: '1', right: '2', matchArrays: true, ignoreText: '' });
+    expect(workers).toHaveLength(1);
+    void client.run({ op: 'validate', doc: '2', schema: '{}' });
+    expect(workers).toHaveLength(2);
+    expect(workers[0].terminated).toBe(true);
+    // The new worker gets the diff that was still pending, then the latest validation.
+    expect(workers[1].sent.map((m) => m.request.op)).toEqual(['diff', 'validate']);
+  });
+
+  it('keeps the worker when nothing is replaced', async () => {
+    await client.run({ op: 'validate', doc: '1', schema: '{}' });
+    await client.run({ op: 'validate', doc: '2', schema: '{}' });
+    expect(workers).toHaveLength(1);
+    expect(workers[0].terminated).toBe(false);
   });
 
   it('rejects an error reply', async () => {
@@ -74,8 +97,9 @@ describe('JsonWorkerClient', () => {
   });
 
   it('rejects pending requests and stays unavailable after the worker fails', async () => {
-    worker.auto = false;
+    hold = true;
     const pending = client.run({ op: 'validate', doc: '1', schema: '{}' });
+    const worker = latest();
     worker.crash();
     await expect(pending).rejects.toThrow('boom');
     expect(worker.terminated).toBe(true);
@@ -94,10 +118,10 @@ describe('JsonWorkerClient', () => {
   });
 
   it('resolves pending requests with null when disposed', async () => {
-    worker.auto = false;
+    hold = true;
     const pending = client.run({ op: 'validate', doc: '1', schema: '{}' });
     client.dispose();
     expect(await pending).toBeNull();
-    expect(worker.terminated).toBe(true);
+    expect(latest().terminated).toBe(true);
   });
 });
