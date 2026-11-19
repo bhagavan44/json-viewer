@@ -15,6 +15,7 @@ import {
   CompareOutcome,
   ValidateOutcome,
   compareDocuments,
+  ignoreTextError,
   resolveIgnoredPaths,
   validateDocument,
   withDiffValues,
@@ -729,6 +730,9 @@ export class App implements DoCheck, OnDestroy {
     this.diffCache = key;
     const texts = this.workerTexts(a, b);
     if (texts) {
+      // Only the options changed: keep showing the last result until the worker replies.
+      if (c.left === a && c.right === b) key.result = c.result;
+      this.ignoreError = ignoreTextError(ignoreText);
       this.diffPending = true;
       void this.diffInWorker(key, texts);
     } else {

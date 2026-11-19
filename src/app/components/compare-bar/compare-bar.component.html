@@ -7,6 +7,9 @@
     <span class="matched-by" *ngIf="matchArrays && d.arrayKeys.length" matTooltip="Array items were paired by these keys, so inserted or reordered items are not reported as changes">
       Arrays matched by {{ d.arrayKeys.join(', ') }}
     </span>
+    <span class="compare-hint" *ngIf="pending" role="status">
+      <mat-icon>hourglass_empty</mat-icon>Comparing…
+    </span>
   </ng-container>
   <ng-template #compareNotReady>
     <span class="compare-hint" *ngIf="pending; else notReady" role="status">

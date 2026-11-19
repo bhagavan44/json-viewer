@@ -473,11 +473,16 @@ describe('App', () => {
   describe('large documents in the worker', () => {
     /** Stands in for the JSON worker: runs the same handler, replying asynchronously. */
     class InProcessWorker extends EventTarget {
+      private terminated = false;
       postMessage({ id, request }: JsonWorkerMessage): void {
         const data = { id, reply: handleJsonRequest(structuredClone(request)) };
-        setTimeout(() => this.dispatchEvent(new MessageEvent('message', { data })));
+        setTimeout(() => {
+          if (!this.terminated) this.dispatchEvent(new MessageEvent('message', { data }));
+        });
       }
-      terminate(): void {}
+      terminate(): void {
+        this.terminated = true;
+      }
     }
 
     // Each side stays under LARGE_TEXT_CHARS (parsed at once) but together they reach the worker.
@@ -519,6 +524,26 @@ describe('App', () => {
       await vi.waitFor(() => expect(app.diff).not.toBeNull());
       expect(app.diff!.changes.map((c) => c.path)).toEqual(['$.v']);
       expect(app.ignoreError).toBeNull();
+    });
+
+    it('keeps the last result and reports a bad ignore path at once while the worker runs', async () => {
+      const app = await create();
+      app.onTextChange(doc('1', 1), app.left);
+      app.onTextChange(doc('2', 2), app.right);
+      void app.diff;
+      await vi.waitFor(() => expect(app.diff).not.toBeNull());
+      const before = app.diff;
+
+      app.ignoreText = 'big';
+      expect(app.diff).toBe(before);
+      expect(app.diffPending).toBe(true);
+      expect(app.ignoreError).toBe('"big" is not a JSONPath (start it with $)');
+
+      app.ignoreText = '$.big';
+      expect(app.diff).toBe(before);
+      expect(app.ignoreError).toBeNull();
+      await vi.waitFor(() => expect(app.diffPending).toBe(false));
+      expect(app.diff!.changes.map((c) => c.path)).toEqual(['$.v']);
     });
 
     it('validates in the worker', async () => {

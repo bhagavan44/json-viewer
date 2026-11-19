@@ -57,6 +57,15 @@ export function splitJsonPaths(text: string): string[] {
   return parts.map((p) => p.trim()).filter(Boolean);
 }
 
+/**
+ * Why `ignoreText` cannot be used, judged from the text alone (no documents needed), so it can
+ * be shown at once. `resolveIgnoredPaths` can still find errors that need evaluating the paths.
+ */
+export function ignoreTextError(ignoreText: string): string | null {
+  const bad = splitJsonPaths(ignoreText).find((expr) => !looksLikeJsonPath(expr));
+  return bad === undefined ? null : `"${bad}" is not a JSONPath (start it with $)`;
+}
+
 /** The tree paths that `ignoreText` selects in each document, or why it cannot be used. */
 export function resolveIgnoredPaths(
   a: unknown,
@@ -65,9 +74,10 @@ export function resolveIgnoredPaths(
 ): { ignore?: IgnoredPaths; error: string | null } {
   const expressions = splitJsonPaths(ignoreText);
   if (!expressions.length) return { error: null };
+  const error = ignoreTextError(ignoreText);
+  if (error) return { error };
   const ignore: IgnoredPaths = { left: new Set(), right: new Set() };
   for (const expr of expressions) {
-    if (!looksLikeJsonPath(expr)) return { error: `"${expr}" is not a JSONPath (start it with $)` };
     try {
       for (const m of queryJsonPath(a, expr)) ignore.left.add(m.path);
       for (const m of queryJsonPath(b, expr)) ignore.right.add(m.path);
