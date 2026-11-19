@@ -9,21 +9,25 @@ export function stripUrlHash<T extends { url: string }>(event: T): T {
   return hash === -1 ? event : { ...event, url: event.url.slice(0, hash) };
 }
 
-/** True for the machine's own addresses, such as `ng serve`, `npm run e2e` or a local preview. */
+/**
+ * True for localhost and loopback addresses: `localhost`, `*.localhost`, all of 127.0.0.0/8,
+ * `0.0.0.0` and `[::1]` (`location.hostname` returns IPv6 hosts in brackets). LAN and public
+ * addresses are not matched.
+ */
 export function isLocalHost(hostname: string): boolean {
   return (
     hostname === 'localhost' ||
     hostname.endsWith('.localhost') ||
-    hostname === '127.0.0.1' ||
-    hostname === '[::1]' ||
-    hostname === '::1'
+    /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+    hostname === '0.0.0.0' ||
+    hostname === '[::1]'
   );
 }
 
 /**
  * Starts anonymous page-view analytics (Vercel Web Analytics). Call it in production builds only.
- * It does nothing on a local host, so the end-to-end tests (which serve a production build on
- * localhost) and local previews never report.
+ * It does nothing on localhost or a loopback address, so the end-to-end tests (which serve a
+ * production build on localhost) never report.
  */
 export function startAnalytics(hostname: string = location.hostname): void {
   if (isLocalHost(hostname)) return;

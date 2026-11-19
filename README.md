@@ -101,7 +101,7 @@ Inside a filter: `@` is the current item, `$` the root; compare with `== != < <=
 
 Your documents never leave the browser: there is no backend, saved files live in the browser, and a share link carries its document in the URL hash (`#s=…`), which browsers do not send to a server.
 
-The hosted app does collect anonymous page-view statistics with [Vercel Web Analytics](https://vercel.com/docs/analytics/privacy-policy) (page path, referrer, country, browser, OS and device type; no cookies). Document contents are never part of this data, and the URL hash is removed before an event is sent. The analytics script loads in production builds only, and never on `localhost`, so the dev server (`npm start`) and the end-to-end tests do not report. If you self-host the app and do not want it, delete `startAnalytics()` in `src/main.ts`.
+The hosted app does collect anonymous page-view statistics with [Vercel Web Analytics](https://vercel.com/docs/analytics/privacy-policy) (page path, referrer, country, browser, OS and device type; no cookies). Document contents are never part of this data, and the URL hash is removed before an event is sent. The analytics script loads in production builds only, and is skipped on localhost and loopback addresses (`localhost`, `127.0.0.0/8`, `0.0.0.0`, `[::1]`), so the dev server (`npm start`) and the end-to-end tests do not report. A production build served on a LAN or public address still reports page views. If you self-host the app and do not want it, delete `startAnalytics()` in `src/main.ts`.
 
 ## Development
 
