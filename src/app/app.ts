@@ -8,23 +8,32 @@ import {
   ViewChild,
 } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { DiffEntry, DiffKind, DiffResult, diffJson } from './utils/json-diff';
-import { JsonPathError, looksLikeJsonPath, queryJsonPath } from './utils/json-path';
+import { DiffEntry, DiffKind, DiffResult } from './utils/json-diff';
 import { jsonPatch } from './utils/json-patch';
+import { SchemaError, ValidationResult, looksLikeSchema } from './utils/json-schema-validate';
 import {
-  SchemaError,
-  SchemaLoadError,
-  ValidationResult,
-  looksLikeSchema,
-  validateSchema,
-} from './utils/json-schema-validate';
+  CompareOutcome,
+  ValidateOutcome,
+  compareDocuments,
+  ignoreTextError,
+  resolveIgnoredPaths,
+  validateDocument,
+  withDiffValues,
+} from './utils/json-compare';
+import { JsonWorkerClient } from './utils/json-worker-client';
 import { parseJson, stringifyJson } from './utils/json-parse';
 import { byteLength, childPath, formatBytes, jsonTypeOf, summarizeValue } from './utils/json-utils';
 import { JsonErrorLocation, friendlyJsonError, locateJsonError } from './utils/json-error';
 import { toCSharp, toTypeScript, toYaml } from './utils/json-convert';
 import { parseEmbedded, replaceAt, unwrapAll } from './utils/json-unwrap';
 import { TextFix, findTextFix, toJsonLines } from './utils/json-repair';
-import { PathSegment, pathAtOffset, pathSegments, spanOfPath } from './utils/json-locate';
+import {
+  PathSegment,
+  pathAtOffset,
+  pathSegments,
+  spanOfPath,
+  valueAtPath,
+} from './utils/json-locate';
 import { EditError, addChild, deleteAt, renameKey, setValue } from './utils/json-edit';
 import { describeRedaction, redact } from './utils/json-redact';
 import { TreeEdit } from './components/json-tree/json-tree.component';
@@ -51,6 +60,8 @@ export interface ValidationView {
   result?: ValidationResult;
   /** Why there is no result (a pane is empty or invalid, or the schema cannot be used). */
   problem?: string;
+  /** The worker is still validating a large document. */
+  pending?: boolean;
 }
 
 /** The path of the container holding `path` (`$` for top-level members). */
@@ -59,45 +70,6 @@ function parentPath(path: string): string {
   return steps.length > 1 ? steps[steps.length - 2].path : '$';
 }
 
-/** The value at a tree path in a parsed document. */
-function jsonAt(doc: unknown, path: string): unknown {
-  let value: any = doc;
-  for (const step of pathSegments(path).slice(1)) {
-    const m = /^\[(\d+)\]$/.exec(step.label);
-    value = m && Array.isArray(value) ? value[Number(m[1])] : value?.[step.label];
-  }
-  return value;
-}
-
-/** Splits comma-separated JSONPath expressions, ignoring commas inside brackets, parentheses and quotes. */
-export function splitJsonPaths(text: string): string[] {
-  const parts: string[] = [];
-  let depth = 0;
-  let quote: string | null = null;
-  let current = '';
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    if (quote) {
-      if (c === '\\') current += c + (text[++i] ?? '');
-      else {
-        if (c === quote) quote = null;
-        current += c;
-      }
-      continue;
-    }
-    if (c === '"' || c === "'") quote = c;
-    else if (c === '[' || c === '(') depth++;
-    else if (c === ']' || c === ')') depth--;
-    else if (c === ',' && depth === 0) {
-      parts.push(current);
-      current = '';
-      continue;
-    }
-    current += c;
-  }
-  parts.push(current);
-  return parts.map((p) => p.trim()).filter(Boolean);
-}
 const PANEL_MODES: PanelMode[] = ['editor', 'tree', 'table'];
 
 export interface PanelState {
@@ -173,6 +145,8 @@ const MAX_OPEN_BYTES = 25 * 1024 * 1024;
 export const LARGE_TEXT_CHARS = 200_000;
 /** How long typing must pause before a large document is parsed again. */
 export const PARSE_DEBOUNCE_MS = 250;
+/** Above this combined size, Compare and schema validation run in a Web Worker. */
+export const WORKER_MIN_CHARS = LARGE_TEXT_CHARS;
 
 @Component({
   selector: 'app-root',
@@ -202,7 +176,8 @@ export class App implements DoCheck, OnDestroy {
     ignoreText: string;
     result: DiffResult | null;
   } = { left: undefined, right: undefined, matchArrays: true, ignoreText: '', result: null };
-  private ignoreSets: { left: Set<string>; right: Set<string> } | undefined;
+  /** The worker is still comparing the current documents. */
+  diffPending = false;
 
   left: PanelState = newPanel();
   right: PanelState = newPanel();
@@ -281,6 +256,7 @@ export class App implements DoCheck, OnDestroy {
     clearTimeout(this.sessionTimer);
     for (const timer of this.parseTimers.values()) clearTimeout(timer);
     this.parseTimers.clear();
+    this.worker?.dispose();
   }
 
   private assignFile(file: SavedFile, panel: PanelState): void {
@@ -295,6 +271,15 @@ export class App implements DoCheck, OnDestroy {
 
   /** Parses scheduled while typing in a large document, per pane. */
   private parseTimers = new Map<PanelState, ReturnType<typeof setTimeout>>();
+  /** The text each parsed document came from, so the worker can be sent text instead of objects. */
+  private parsedFrom = new WeakMap<object, string>();
+  /** Runs Compare and schema validation of large documents off the main thread (none in tests). */
+  private worker =
+    typeof Worker === 'undefined'
+      ? null
+      : new JsonWorkerClient(
+          () => new Worker(new URL('./json.worker', import.meta.url), { type: 'module' }),
+        );
 
   onTextChange(text: string, panel: PanelState): void {
     panel.jsonText = text;
@@ -334,6 +319,8 @@ export class App implements DoCheck, OnDestroy {
       panel.parsedJson = parseJson(text);
       panel.jsonError = null;
       panel.isValid = true;
+      if (typeof panel.parsedJson === 'object' && panel.parsedJson !== null)
+        this.parsedFrom.set(panel.parsedJson, text);
     } catch (e: any) {
       panel.parsedJson = null;
       panel.jsonError = e.message;
@@ -407,7 +394,7 @@ export class App implements DoCheck, OnDestroy {
           break;
         case 'add': {
           text = addChild(before, edit.path, edit.key, edit.value);
-          const parent = jsonAt(panel.parsedJson, edit.path);
+          const parent = valueAtPath(panel.parsedJson, edit.path);
           focus =
             edit.key !== null
               ? childPath(edit.path, edit.key, false)
@@ -733,56 +720,69 @@ export class App implements DoCheck, OnDestroy {
     const { matchArrays, ignoreText } = this;
     const c = this.diffCache;
     if (
-      c.left !== a ||
-      c.right !== b ||
-      c.matchArrays !== matchArrays ||
-      c.ignoreText !== ignoreText ||
-      !c.result
-    ) {
-      this.ignoreSets = this.resolveIgnore(a, b);
-      this.diffCache = {
-        left: a,
-        right: b,
-        matchArrays,
-        ignoreText,
-        result: diffJson(a, b, { matchArrays, ignore: this.ignoreSets }),
-      };
+      c.left === a &&
+      c.right === b &&
+      c.matchArrays === matchArrays &&
+      c.ignoreText === ignoreText
+    )
+      return c.result;
+    const key = { left: a, right: b, matchArrays, ignoreText, result: null as DiffResult | null };
+    this.diffCache = key;
+    const texts = this.workerTexts(a, b);
+    if (texts) {
+      // Only the options changed: keep showing the last result until the worker replies.
+      if (c.left === a && c.right === b) key.result = c.result;
+      this.ignoreError = ignoreTextError(ignoreText);
+      this.diffPending = true;
+      void this.diffInWorker(key, texts);
+    } else {
+      this.diffPending = false;
+      this.applyDiff(key, compareDocuments(a, b, { matchArrays, ignoreText }));
     }
-    return this.diffCache.result;
+    return key.result;
   }
 
-  /** The tree paths that `ignoreText` selects in each document; sets `ignoreError` when it is invalid. */
-  private resolveIgnore(
-    a: unknown,
-    b: unknown,
-  ): { left: Set<string>; right: Set<string> } | undefined {
-    this.ignoreError = null;
-    const expressions = splitJsonPaths(this.ignoreText);
-    if (!expressions.length) return undefined;
-    const sets = { left: new Set<string>(), right: new Set<string>() };
-    for (const expr of expressions) {
-      if (!looksLikeJsonPath(expr)) {
-        this.ignoreError = `"${expr}" is not a JSONPath (start it with $)`;
-        return undefined;
-      }
-      try {
-        for (const m of queryJsonPath(a, expr)) sets.left.add(m.path);
-        for (const m of queryJsonPath(b, expr)) sets.right.add(m.path);
-      } catch (e) {
-        this.ignoreError = `${expr}: ${e instanceof JsonPathError ? e.message : 'invalid path'}`;
-        return undefined;
-      }
+  private applyDiff(key: App['diffCache'], outcome: CompareOutcome): void {
+    key.result = outcome.result;
+    this.ignoreError = outcome.ignoreError;
+  }
+
+  private async diffInWorker(key: App['diffCache'], [left, right]: [string, string]): Promise<void> {
+    const { matchArrays, ignoreText } = key;
+    let outcome: CompareOutcome;
+    try {
+      const reply = await this.worker!.run({ op: 'diff', left, right, matchArrays, ignoreText });
+      if (!reply) return; // a newer comparison replaced this one
+      outcome = { ...reply, result: withDiffValues(reply.result, key.left, key.right) };
+    } catch {
+      outcome = compareDocuments(key.left, key.right, { matchArrays, ignoreText });
     }
-    return sets;
+    if (this.diffCache !== key) return;
+    this.applyDiff(key, outcome);
+    this.diffPending = false;
+    this.cdr.markForCheck();
+  }
+
+  /** The texts two documents were parsed from, when together they are big enough for the worker. */
+  private workerTexts(a: unknown, b: unknown): [string, string] | null {
+    if (!this.worker?.available) return null;
+    const textOf = (d: unknown) =>
+      typeof d === 'object' && d !== null ? this.parsedFrom.get(d) : undefined;
+    const first = textOf(a);
+    const second = textOf(b);
+    if (first === undefined || second === undefined) return null;
+    return first.length + second.length > WORKER_MIN_CHARS ? [first, second] : null;
   }
 
   /** Copies an RFC 6902 patch that turns the left document into the right one. */
   copyPatch(): void {
     this.ensureParsed(this.left, this.right);
     if (!this.compareReady) return;
-    void this.diff; // resolves the ignored paths
-    const ignored = new Set([...(this.ignoreSets?.left ?? []), ...(this.ignoreSets?.right ?? [])]);
-    const ops = jsonPatch(this.left.parsedJson, this.right.parsedJson, ignored);
+    const a = this.left.parsedJson;
+    const b = this.right.parsedJson;
+    const { ignore } = resolveIgnoredPaths(a, b, this.ignoreText);
+    const ignored = new Set([...(ignore?.left ?? []), ...(ignore?.right ?? [])]);
+    const ops = jsonPatch(a, b, ignored);
     navigator.clipboard
       .writeText(stringifyJson(ops, 2))
       .then(() =>
@@ -828,29 +828,40 @@ export class App implements DoCheck, OnDestroy {
         problem: `Load valid JSON in the ${docSide} pane to validate it.`,
       };
     const memo = this.validationMemo;
-    if (
-      memo &&
-      memo.doc === docPanel.parsedJson &&
-      memo.schema === schemaPanel.parsedJson &&
-      memo.view.docSide === docSide
-    )
+    const doc = docPanel.parsedJson;
+    const schema = schemaPanel.parsedJson;
+    if (memo && memo.doc === doc && memo.schema === schema && memo.view.docSide === docSide)
       return memo.view;
-    let view: ValidationView;
+    const next = { doc, schema, view: { docSide, schemaSide, pending: true } as ValidationView };
+    this.validationMemo = next;
+    const texts = this.workerTexts(doc, schema);
+    if (texts) void this.validateInWorker(next, texts);
+    else next.view = this.validationView(docSide, validateDocument(doc, schema));
+    return next.view;
+  }
+
+  private validationView(docSide: 'left' | 'right', outcome: ValidateOutcome): ValidationView {
+    const schemaSide = docSide === 'left' ? 'right' : 'left';
+    return outcome.result
+      ? { docSide, schemaSide, result: outcome.result }
+      : { docSide, schemaSide, problem: `The schema cannot be used: ${outcome.schemaError}.` };
+  }
+
+  private async validateInWorker(
+    memo: NonNullable<App['validationMemo']>,
+    [doc, schema]: [string, string],
+  ): Promise<void> {
+    let outcome: ValidateOutcome;
     try {
-      view = {
-        docSide,
-        schemaSide,
-        result: validateSchema(docPanel.parsedJson, schemaPanel.parsedJson),
-      };
-    } catch (e) {
-      view = {
-        docSide,
-        schemaSide,
-        problem: `The schema cannot be used: ${e instanceof SchemaLoadError ? e.message : 'unexpected error'}.`,
-      };
+      const reply = await this.worker!.run({ op: 'validate', doc, schema });
+      if (!reply) return; // a newer validation replaced this one
+      outcome = reply;
+    } catch {
+      outcome = validateDocument(memo.doc, memo.schema);
     }
-    this.validationMemo = { doc: docPanel.parsedJson, schema: schemaPanel.parsedJson, view };
-    return view;
+    if (this.validationMemo !== memo) return;
+    memo.view = this.validationView(memo.view.docSide, outcome);
+    this.cdr.markForCheck();
   }
 
   /** Offer validation when the other pane holds a schema and this one holds a document. */
