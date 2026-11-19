@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.3.0](https://github.com/bhagavan44/json-viewer/compare/v0.2.0...v0.3.0) (2026-11-19)
+
+
+### Features
+
+* debounce parsing of large documents while typing ([#70](https://github.com/bhagavan44/json-viewer/issues/70)) ([75462a5](https://github.com/bhagavan44/json-viewer/commit/75462a55b63f84c06db65aec3f8ddf91857a0847))
+* run Compare and schema validation of large documents in a Web Worker ([#71](https://github.com/bhagavan44/json-viewer/issues/71)) ([d3fac39](https://github.com/bhagavan44/json-viewer/commit/d3fac39d91ef5d4f8497159ea4110d7cf223a799))
+
+
+### Documentation
+
+* update Angular version mentions to 22 ([#65](https://github.com/bhagavan44/json-viewer/issues/65)) ([dc6965d](https://github.com/bhagavan44/json-viewer/commit/dc6965d7a202c630f4d18fd760ec428a8d794a45))
+
 ## [0.2.0](https://github.com/bhagavan44/json-viewer/compare/v0.1.0...v0.2.0) (2026-11-18)
 
 
