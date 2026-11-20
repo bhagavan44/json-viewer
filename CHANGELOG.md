@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/bhagavan44/json-viewer/compare/v0.3.0...v0.4.0) (2026-11-20)
+
+
+### Features
+
+* build tree nodes lazily instead of for the whole document ([#73](https://github.com/bhagavan44/json-viewer/issues/73)) ([27a0feb](https://github.com/bhagavan44/json-viewer/commit/27a0febc6e3dd8ad15a5afb18ae616211256a2aa)), closes [#47](https://github.com/bhagavan44/json-viewer/issues/47)
+
 ## [0.3.0](https://github.com/bhagavan44/json-viewer/compare/v0.2.0...v0.3.0) (2026-11-19)
 
 
