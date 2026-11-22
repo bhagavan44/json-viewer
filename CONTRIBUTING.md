@@ -70,7 +70,8 @@ chore: bump monaco-editor
 ```
 
 Common prefixes are `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, `ci` and `perf`. Keep each
-commit to one change.
+commit to one change. The prefixes also set the next version (see "Releases and versioning" in the
+README), so mark breaking changes with `!` (`feat!: ...`) or a `BREAKING CHANGE:` footer.
 
 ## Code conventions
 
