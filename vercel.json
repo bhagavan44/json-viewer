@@ -8,7 +8,7 @@
   "rewrites": [{ "source": "/((?!vs/)[^.]*)", "destination": "/index.html" }],
   "headers": [
     {
-      "source": "/:file((?:main|styles|chunk|polyfills)-[A-Za-z0-9_-]+\\.(?:js|css))",
+      "source": "/:file((?:main|styles|chunk|polyfills|worker)-[A-Za-z0-9_-]+\\.(?:js|css))",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
     },
     {

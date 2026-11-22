@@ -1,4 +1,4 @@
-import { pathAtOffset, pathSegments, spanOfPath } from './json-locate';
+import { pathAtOffset, pathSegments, spanOfPath, valueAtPath } from './json-locate';
 
 const TEXT = `{
   "id": 7,
@@ -59,5 +59,19 @@ describe('pathSegments', () => {
     ]);
     expect(pathSegments('$')).toEqual([{ label: '$', path: '$' }]);
     expect(pathSegments('$["a\\"]b"]').map((s) => s.label)).toEqual(['$', 'a"]b']);
+  });
+});
+
+describe('valueAtPath', () => {
+  const doc = { orders: [{ 'unit price': 2 }], '[0]': 'key' };
+
+  it('looks up keys, indexes and quoted keys', () => {
+    expect(valueAtPath(doc, '$')).toBe(doc);
+    expect(valueAtPath(doc, '$.orders[0]["unit price"]')).toBe(2);
+    expect(valueAtPath(doc, '$["[0]"]')).toBe('key');
+  });
+
+  it('returns undefined when nothing is there', () => {
+    expect(valueAtPath(doc, '$.orders[3].qty')).toBeUndefined();
   });
 });

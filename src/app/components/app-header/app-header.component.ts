@@ -1,4 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { APP_VERSION, releaseUrl } from '../../utils/app-version';
 
 export type ViewMode = 'edit' | 'compare';
 
@@ -22,4 +23,7 @@ export class AppHeaderComponent {
   @Output() openPalette = new EventEmitter<void>();
   @Output() toggleFiles = new EventEmitter<void>();
   @Output() toggleTheme = new EventEmitter<void>();
+
+  readonly version = APP_VERSION;
+  readonly releaseUrl = releaseUrl();
 }

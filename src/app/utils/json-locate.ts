@@ -113,3 +113,13 @@ export function pathSegments(path: string): PathSegment[] {
   }
   return segments;
 }
+
+/** The value at a tree path in a parsed document (undefined when nothing is there). */
+export function valueAtPath(doc: unknown, path: string): unknown {
+  let value: any = doc;
+  for (const step of pathSegments(path).slice(1)) {
+    const m = /^\[(\d+)\]$/.exec(step.label);
+    value = m && Array.isArray(value) ? value[Number(m[1])] : value?.[step.label];
+  }
+  return value;
+}

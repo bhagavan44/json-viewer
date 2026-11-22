@@ -2,7 +2,7 @@
 
 A browser-based workspace for reading, editing, searching and comparing JSON. Two panes sit side by side. Each one can be a code editor, a tree or a table, so you can look at two documents at once, find things in them, and see exactly what differs. Everything runs in the browser; nothing is uploaded.
 
-Built with Angular 21, Angular Material and the Monaco editor.
+Built with Angular 22, Angular Material and the Monaco editor.
 
 ## What it does
 
@@ -97,6 +97,12 @@ Inside a filter: `@` is the current item, `$` the root; compare with `== != < <=
 - The table shows up to 200 rows at first, with **Show more** for the rest.
 - Share links use `CompressionStream`; browsers without it fall back to longer, uncompressed links.
 
+## Privacy
+
+Your documents never leave the browser: there is no backend, saved files live in the browser, and a share link carries its document in the URL hash (`#s=…`), which browsers do not send to a server.
+
+The hosted app does collect anonymous page-view statistics with [Vercel Web Analytics](https://vercel.com/docs/analytics/privacy-policy) (page path, referrer, country, browser, OS and device type; no cookies). Document contents are never part of this data, and the URL hash is removed before an event is sent. The analytics script loads in production builds only, and is skipped on localhost and loopback addresses (`localhost`, `127.0.0.0/8`, `0.0.0.0`, `[::1]`), so the dev server (`npm start`) and the end-to-end tests do not report. A production build served on a LAN or public address still reports page views. If you self-host the app and do not want it, delete `startAnalytics()` in `src/main.ts`.
+
 ## Development
 
 ```bash
@@ -114,11 +120,18 @@ The end-to-end tests live in `e2e/`. Playwright starts `ng serve --configuration
 
 The production build is plain static files and can be served from any static host (it is deployed on Vercel).
 
+### Releases and versioning
+
+Versions are worked out from the [Conventional Commits](https://www.conventionalcommits.org/) on `main` by [release-please](https://github.com/googleapis/release-please) (`.github/workflows/release.yml`). After each push to `main` it keeps a release pull request open that bumps the version in `package.json` and adds the changes to `CHANGELOG.md`. Merging that pull request tags the release (`vX.Y.Z`) and publishes it on GitHub. Before 1.0, `feat` bumps the minor version, `fix` and `perf` the patch version, and a breaking change (`feat!:` or a `BREAKING CHANGE:` footer) the minor version.
+
+The header shows the version from `package.json` (`utils/app-version.ts`), linked to its release notes.
+
 ### Layout
 
 ```
 src/app/
   app.ts, app.html, app.scss       Shell: header, files sidebar, panes, compare bar, palette wiring
+  json.worker.ts                   Web Worker: Compare and schema validation of large documents
   components/
     json-editor/                   Monaco wrapper
     json-tree/                     Tree: search, JSONPath, diff marks, virtual scrolling, keyboard
@@ -128,6 +141,9 @@ src/app/
   utils/
     json-parse.ts                  Lossless number parsing
     json-diff.ts                   Structural diff, with array items matched by key
+    json-compare.ts                Compare with ignored paths, schema validation, diff values by path
+    json-worker-handler.ts         Worker requests and replies (runs inside the worker)
+    json-worker-client.ts          Sends work to the worker; the latest request wins
     json-unwrap.ts                 JSON embedded in strings, escaped JSON
     json-locate.ts                 Text offset ↔ path, breadcrumb steps
     json-schema-validate.ts        JSON Schema validation
@@ -142,12 +158,14 @@ src/app/
     json-convert.ts, json-schema.ts   YAML, TypeScript, C# and JSON Schema output
     json-error.ts                  Parse error locations
     share-link.ts                  Share link encoding
+    app-version.ts                 App version (from package.json) and its release link
 ```
 
 ### Things to know
 
-- **The app runs without zone.js** (the Angular 21 default). State changed inside a promise or timer is not rendered until something calls `markForCheck()`, so call it after async updates.
+- **The app runs without zone.js** (the Angular 22 default). State changed inside a promise or timer is not rendered until something calls `markForCheck()`, so call it after async updates.
 - The tree renders only the rows in view (CDK virtual scroll), so every row must be exactly `TREE_ROW_HEIGHT` px tall (`json-tree.component.ts` and `json-tree-node.component.scss`).
+- Above 200,000 characters (both documents together), Compare and schema validation run in a Web Worker (`json.worker.ts`), and smaller documents are still handled on the main thread. The worker is sent the text and parses it itself, because lossless numbers don't survive the copy between threads. For the same reason a diff comes back without its values, which `withDiffValues()` looks up again by path. When a newer request replaces one the worker is still on (say, while typing ignore paths), the worker is restarted rather than left to finish it. Unit tests run without a worker (jsdom has none). If the worker fails, the app falls back to the main thread.
 - Node paths use one format everywhere (`$`, `$.items[1].qty`, `$["a b"]`): the tree, the diff, JSONPath results and "Copy path" all share `childPath()` in `json-utils.ts`.
 
 ## Contributing
