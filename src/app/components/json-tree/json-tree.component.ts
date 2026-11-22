@@ -26,29 +26,67 @@ import {
 } from '../../utils/json-edit';
 import { JsonPathError, looksLikeJsonPath, queryJsonPath } from '../../utils/json-path';
 import { byteLength, childPath, formatBytes, JsonType, jsonTypeOf } from '../../utils/json-utils';
+import { pathSegments } from '../../utils/json-locate';
+import { ancestorPaths, countValues, findText } from '../../utils/json-walk';
 
-export interface JsonNode {
-  key: string | null;
-  value: any;
-  type: JsonType;
-  children: JsonNode[];
-  collapsed: boolean;
-  /** JSONPath-style path, unique within the document (e.g. `$.items[1].qty`). */
-  path: string;
-  /** True when the parent is an array, so the key is an index. */
-  inArray: boolean;
+/**
+ * One value in the tree. Children are created the first time they are read, so a large
+ * document only gets nodes for the parts that are opened, searched or revealed.
+ */
+export class JsonNode {
+  collapsed = true;
   /** Diff mark for this node, inherited from the nearest marked ancestor. */
-  mark: DiffKind | null;
+  mark: DiffKind | null = null;
   /** True when the mark was set on this node itself (not inherited). */
-  markOwn: boolean;
+  markOwn = false;
   /** This node, or something inside it, differs from the other document. */
-  hasChange: boolean;
+  hasChange = false;
   /** The search query matches this node's key or value. */
-  match: boolean;
+  match = false;
+  /** A match, or inside one. */
+  withinMatch = false;
   /** Visible in "filter" mode: a match, inside a match, or containing one. */
-  searchVisible: boolean;
+  searchVisible = true;
   /** A string that looks like it holds a JSON object or array. */
-  embedsJson: boolean;
+  readonly embedsJson: boolean;
+  private kids: JsonNode[] | null = null;
+  private count = -1;
+
+  constructor(
+    private readonly build: (node: JsonNode) => JsonNode[],
+    readonly key: string | null,
+    readonly value: any,
+    readonly type: JsonType,
+    /** JSONPath-style path, unique within the document (e.g. `$.items[1].qty`). */
+    readonly path: string,
+    /** True when the parent is an array, so the key is an index. */
+    readonly inArray: boolean,
+  ) {
+    this.embedsJson = type === 'string' && looksLikeJson(value);
+  }
+
+  /** The child nodes, created on first access. */
+  get children(): JsonNode[] {
+    return (this.kids ??= this.build(this));
+  }
+
+  /** The children created so far (none until `children` is first read). */
+  get loadedChildren(): JsonNode[] {
+    return this.kids ?? [];
+  }
+
+  /** Number of children, without creating them. */
+  get size(): number {
+    if (this.count < 0) {
+      this.count =
+        this.type === 'array'
+          ? this.value.length
+          : this.type === 'object'
+            ? Object.keys(this.value).length
+            : 0;
+    }
+    return this.count;
+  }
 }
 
 /**
@@ -154,7 +192,9 @@ export class JsonTreeComponent implements OnChanges, OnDestroy {
   queryText = '';
   /** Why the typed JSONPath could not be evaluated, if it could not. */
   queryError: string | null = null;
+  /** Paths of the current matches, and of every node that contains one. */
   private queryPaths = new Set<string>();
+  private queryAncestors = new Set<string>();
   filterMode = false;
   matchPaths: string[] = [];
   activeIdx = -1;
@@ -250,7 +290,7 @@ export class JsonTreeComponent implements OnChanges, OnDestroy {
     const walk = (n: JsonNode, depth: number): void => {
       if (!visible(n)) return;
       rows.push({ node: n, depth, closing: false });
-      if (n.children.length && !n.collapsed) {
+      if (n.size && !n.collapsed) {
         for (const child of n.children) walk(child, depth + 1);
         rows.push({ node: n, depth, closing: true });
       }
@@ -267,12 +307,14 @@ export class JsonTreeComponent implements OnChanges, OnDestroy {
   }
 
   // ── Search ────────────────────────────────────────────────────────────────
-  private nodeCount = 0;
+  /** Values in the document (up to `LARGE_TREE_NODES`), counted on the first search. */
+  private nodeCount: number | null = null;
   private queryTimer?: ReturnType<typeof setTimeout>;
 
   /** Searches as you type; in large documents, waits for a pause in typing first. */
   queueQueryChange(): void {
     clearTimeout(this.queryTimer);
+    this.nodeCount ??= countValues(this.data, LARGE_TREE_NODES);
     if (this.nodeCount < LARGE_TREE_NODES) return this.onQueryChange();
     this.queryTimer = setTimeout(() => {
       this.onQueryChange();
@@ -317,39 +359,42 @@ export class JsonTreeComponent implements OnChanges, OnDestroy {
     this.scrollToPath(path);
   }
 
+  /**
+   * Finds the matches in the parsed value, then updates the nodes created so far and creates
+   * only the ones on the way to a match. Nodes created later read `queryPaths` and
+   * `queryAncestors` themselves (see `createNode`).
+   */
   private applySearch(): void {
     const active = this.ctx.active;
-    const q = this.queryText.toLowerCase();
     this.matchPaths = [];
-    this.queryPaths = new Set();
     this.queryError = null;
+    let hits: string[] = [];
     if (active && this.ctx.pathMode) {
       try {
-        for (const hit of queryJsonPath(this.data, this.queryText)) this.queryPaths.add(hit.path);
+        hits = queryJsonPath(this.data, this.queryText).map((hit) => hit.path);
       } catch (e) {
         this.queryError = e instanceof JsonPathError ? e.message : 'Could not evaluate the path';
       }
+    } else if (active && this.data !== null && this.data !== undefined) {
+      hits = findText(this.data, this.queryText);
     }
-    const visit = (node: JsonNode, forced: boolean): boolean => {
-      node.match =
-        active && (this.ctx.pathMode ? this.queryPaths.has(node.path) : this.nodeMatches(node, q));
+    this.queryPaths = new Set(hits);
+    this.queryAncestors = ancestorPaths(this.queryPaths);
+
+    // Depth first, so matches are listed in document order.
+    const visit = (node: JsonNode, forced: boolean): void => {
+      const leads = this.queryAncestors.has(node.path);
+      node.match = active && this.queryPaths.has(node.path);
+      node.withinMatch = forced || node.match;
+      node.searchVisible = !active || node.withinMatch || leads;
       if (node.match) this.matchPaths.push(node.path);
-      const inherited = forced || node.match;
-      let descendantMatch = false;
-      for (const child of node.children) {
-        if (visit(child, inherited)) descendantMatch = true;
+      if (active && leads) node.collapsed = false;
+      for (const child of leads ? node.children : node.loadedChildren) {
+        visit(child, node.withinMatch);
       }
-      node.searchVisible = !active || inherited || descendantMatch;
-      if (active && descendantMatch) node.collapsed = false;
-      return node.match || descendantMatch;
     };
     this.rootNodes.forEach((n) => visit(n, false));
     this.refresh();
-  }
-
-  private nodeMatches(node: JsonNode, q: string): boolean {
-    if (node.key !== null && node.key.toLowerCase().includes(q)) return true;
-    return node.children.length === 0 && String(node.value).toLowerCase().includes(q);
   }
 
   // ── Selection, copy ───────────────────────────────────────────────────────
@@ -362,9 +407,9 @@ export class JsonTreeComponent implements OnChanges, OnDestroy {
     this.selectedEmbedsJson = node.embedsJson && parseEmbedded(node.value) !== undefined;
     const size = () => formatBytes(byteLength(stringifyJson(node.value)));
     if (node.type === 'object') {
-      this.selectedMeta = `object · ${node.children.length} keys · ${size()}`;
+      this.selectedMeta = `object · ${node.size} keys · ${size()}`;
     } else if (node.type === 'array') {
-      this.selectedMeta = `array · ${node.children.length} items · ${size()}`;
+      this.selectedMeta = `array · ${node.size} items · ${size()}`;
     } else if (node.type === 'string') {
       this.selectedMeta = `string · ${node.value.length} chars`;
     } else {
@@ -465,7 +510,7 @@ export class JsonTreeComponent implements OnChanges, OnDestroy {
   }
 
   private siblingKeys(node: JsonNode): string[] {
-    const chain = this.findChain(this.rootNodes, node.path, []);
+    const chain = this.findChain(node.path);
     const parent = chain && chain.length > 1 ? chain[chain.length - 2] : null;
     return parent ? parent.children.map((c) => c.key ?? '') : [];
   }
@@ -495,7 +540,7 @@ export class JsonTreeComponent implements OnChanges, OnDestroy {
 
   // ── Reveal / scroll ───────────────────────────────────────────────────────
   private revealPath(path: string): void {
-    const chain = this.findChain(this.rootNodes, path, []);
+    const chain = this.findChain(path);
     if (!chain) return;
     chain.slice(0, -1).forEach((n) => (n.collapsed = false));
     this.refresh();
@@ -505,15 +550,18 @@ export class JsonTreeComponent implements OnChanges, OnDestroy {
     setTimeout(() => this.ctx.flashPath.set(null), 1200);
   }
 
-  private findChain(nodes: JsonNode[], path: string, trail: JsonNode[]): JsonNode[] | null {
-    for (const node of nodes) {
-      if (node.path === path) return [...trail, node];
-      if (node.children.length && path.startsWith(node.path)) {
-        const found = this.findChain(node.children, path, [...trail, node]);
-        if (found) return found;
-      }
+  /** The nodes from the root down to `path`, creating only those on the way. */
+  private findChain(path: string): JsonNode[] | null {
+    let node = this.rootNodes[0];
+    if (!node) return null;
+    const chain = [node];
+    for (const step of pathSegments(path).slice(1)) {
+      const next = node.children.find((c) => c.path === step.path);
+      if (!next) return null;
+      chain.push(next);
+      node = next;
     }
-    return null;
+    return node.path === path ? chain : null;
   }
 
   private rowIndex(path: string | null): number {
@@ -552,7 +600,7 @@ export class JsonTreeComponent implements OnChanges, OnDestroy {
     };
     const current = this.rowIndex(this.ctx.selectedPath());
     const node = current >= 0 ? this.rows[current].node : null;
-    const isContainer = !!node && node.children.length > 0;
+    const isContainer = !!node && node.size > 0;
     let target = -2; // -2: key not handled
 
     switch (event.key) {
@@ -576,7 +624,7 @@ export class JsonTreeComponent implements OnChanges, OnDestroy {
       case 'ArrowLeft':
         if (node && isContainer && !node.collapsed) this.ctx.toggle(node);
         else if (node) {
-          const chain = this.findChain(this.rootNodes, node.path, []);
+          const chain = this.findChain(node.path);
           const parent = chain && chain.length > 1 ? chain[chain.length - 2] : null;
           target = parent ? this.rowIndex(parent.path) : -1;
         }
@@ -612,78 +660,81 @@ export class JsonTreeComponent implements OnChanges, OnDestroy {
       this.clearSelection();
       return;
     }
-    const collapseState = new Map<string, boolean>();
-    this.snapshotState(this.rootNodes, collapseState);
-    this.nodeCount = 0;
-    this.rootNodes = [this.createNode(null, this.data, '$', false, collapseState, null)];
+    this.collapseState = new Map<string, boolean>();
+    this.snapshotState(this.rootNodes, this.collapseState);
+    this.changePaths = ancestorPaths(Object.keys(this.diffMarks ?? {}));
+    this.nodeCount = null;
+    this.rootNodes = [this.createNode(null, null, this.data, '$', false)];
     this.applySearch();
 
     const selectedPath = this.ctx.selectedPath();
-    const keep = selectedPath
-      ? this.findChain(this.rootNodes, selectedPath, [])
-      : null;
+    const keep = selectedPath ? this.findChain(selectedPath) : null;
     if (keep) this.setSelected(keep[keep.length - 1]);
     else this.clearSelection();
   }
 
+  /** Records which nodes are open. Nodes never created are collapsed, so they are skipped. */
   private snapshotState(nodes: JsonNode[], map: Map<string, boolean>): void {
     for (const node of nodes) {
       map.set(node.path, node.collapsed);
-      if (node.children.length) this.snapshotState(node.children, map);
+      this.snapshotState(node.loadedChildren, map);
     }
   }
 
+  /** Open or closed state from before the last rebuild, for nodes created since. */
+  private collapseState = new Map<string, boolean>();
+  /** Paths of the nodes that contain a diff mark. */
+  private changePaths = new Set<string>();
+
+  private readonly buildChildren = (parent: JsonNode): JsonNode[] => {
+    const { type, value, path } = parent;
+    if (type === 'object') {
+      return Object.keys(value).map((k) =>
+        this.createNode(parent, k, value[k], childPath(path, k, false), false),
+      );
+    }
+    if (type === 'array') {
+      return (value as any[]).map((v, i) =>
+        this.createNode(parent, String(i), v, childPath(path, i, true), true),
+      );
+    }
+    return [];
+  };
+
   private createNode(
+    parent: JsonNode | null,
     key: string | null,
     value: any,
     path: string,
     inArray: boolean,
-    collapseState: Map<string, boolean>,
-    inheritedMark: DiffKind | null,
   ): JsonNode {
-    const type = jsonTypeOf(value);
+    const node = new JsonNode(this.buildChildren, key, value, jsonTypeOf(value), path, inArray);
+    const inheritedMark = parent && this.inheritMarks ? parent.mark : null;
     const ownMark = this.diffMarks?.[path] ?? null;
-    const mark = ownMark ?? inheritedMark;
-    const passDown = this.inheritMarks ? mark : null;
-    this.nodeCount++;
-    const node: JsonNode = {
-      key,
-      value,
-      type,
-      children: [],
-      collapsed: collapseState.has(path) ? collapseState.get(path)! : path !== '$',
-      path,
-      inArray,
-      mark,
-      markOwn: !!ownMark,
-      hasChange: !!mark,
-      match: false,
-      searchVisible: true,
-      embedsJson: type === 'string' && looksLikeJson(value),
-    };
-
-    if (type === 'object') {
-      node.children = Object.entries(value).map(([k, v]) =>
-        this.createNode(k, v, childPath(path, k, false), false, collapseState, passDown),
-      );
-    } else if (type === 'array') {
-      node.children = (value as any[]).map((v, i) =>
-        this.createNode(String(i), v, childPath(path, i, true), true, collapseState, passDown),
-      );
-    }
-    if (node.children.some((c) => c.hasChange)) node.hasChange = true;
+    node.mark = ownMark ?? inheritedMark;
+    node.markOwn = !!ownMark;
+    node.hasChange = !!node.mark || this.changePaths.has(path);
+    node.collapsed = this.collapseState.get(path) ?? path !== '$';
     // When comparing, open the branches that lead to a difference (but not the inside of a
     // wholly added or removed subtree), so large documents are not expanded in full.
     if (this.diffMarks && node.hasChange && !inheritedMark) node.collapsed = false;
+
+    const active = this.ctx.active;
+    node.match = active && this.queryPaths.has(path);
+    node.withinMatch = !!parent?.withinMatch || node.match;
+    node.searchVisible = !active || node.withinMatch || this.queryAncestors.has(path);
     return node;
   }
 
+  /** Expanding creates every node; collapsing only touches the ones that exist. */
   private setAllCollapsed(collapsed: boolean, nodes: JsonNode[]): void {
-    for (const node of nodes) {
-      node.collapsed = collapsed;
-      if (node.children.length > 0) {
-        this.setAllCollapsed(collapsed, node.children);
+    if (collapsed) this.collapseState.clear();
+    const walk = (list: JsonNode[]): void => {
+      for (const node of list) {
+        node.collapsed = collapsed;
+        if (node.size) walk(collapsed ? node.loadedChildren : node.children);
       }
-    }
+    };
+    walk(nodes);
   }
 }

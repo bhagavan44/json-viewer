@@ -171,6 +171,57 @@ describe('JsonTreeComponent', () => {
     expect(marked('name')).toBe('del');
   });
 
+  describe('lazy nodes', () => {
+    const BIG = { items: Array.from({ length: 100_000 }, (_, i) => ({ id: i, tags: ['x'] })) };
+
+    it('creates nodes only for the rows that are open', () => {
+      const { tree } = create({ data: BIG });
+      const items = tree.rootNodes[0].children[0];
+      expect(labels(tree)).toEqual(['$@0', 'items@1', '}']);
+      expect(items.size).toBe(100_000);
+      expect(items.loadedChildren).toHaveLength(0);
+
+      tree.ctx.toggle(items);
+      expect(items.loadedChildren).toHaveLength(100_000);
+      expect(items.children.every((c) => c.loadedChildren.length === 0)).toBe(true);
+    });
+
+    it('creates only the chain to a search match, a difference or a revealed path', async () => {
+      const { fixture, tree } = create({ data: BIG });
+      const items = tree.rootNodes[0].children[0];
+
+      tree.query = '$.items[99999].id';
+      tree.onQueryChange();
+      expect(tree.matchPaths).toEqual(['$.items[99999].id']);
+      expect(items.children[99999].loadedChildren).toHaveLength(2);
+      expect(items.children[5].loadedChildren).toHaveLength(0);
+      tree.clearQuery();
+
+      fixture.componentRef.setInput('diffMarks', { '$.items[7].tags[0]': 'chg' });
+      fixture.detectChanges();
+      const rebuilt = tree.rootNodes[0].children[0];
+      expect(rebuilt.children[7].hasChange).toBe(true);
+      expect(rebuilt.children[8].hasChange).toBe(false);
+      expect(rebuilt.children[8].loadedChildren).toHaveLength(0);
+
+      fixture.componentRef.setInput('reveal', { path: '$.items[42].tags[0]' });
+      fixture.detectChanges();
+      await Promise.resolve();
+      expect(tree.ctx.selectedPath()).toBe('$.items[42].tags[0]');
+      expect(rebuilt.children[41].loadedChildren).toHaveLength(0);
+    });
+
+    it('collapse all closes nodes that were opened before a rebuild', () => {
+      const { fixture, tree } = create();
+      tree.ctx.toggle(tree.rows.find((r) => r.node.key === 'user')!.node);
+      fixture.componentRef.setInput('data', { ...DOC });
+      fixture.componentRef.setInput('collapseAllTrigger', 1);
+      fixture.detectChanges();
+      tree.ctx.toggle(tree.rootNodes[0]);
+      expect(labels(tree)).toEqual(['$@0', 'id@1', 'user@1', 'items@1', '}']);
+    });
+  });
+
   describe('editing', () => {
     function selectKey(tree: JsonTreeComponent, key: string) {
       tree.ctx.select(tree.rows.find((r) => !r.closing && r.node.key === key)!.node);

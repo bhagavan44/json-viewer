@@ -31,7 +31,7 @@
   </ng-container>
 
   <ng-container *ngIf="isContainer">
-    <span *ngIf="node.collapsed" class="item-count">{{ node.children.length }}</span>
+    <span *ngIf="node.collapsed" class="item-count">{{ node.size }}</span>
     <span *ngIf="!node.collapsed" class="bracket">{{ openBracket }}</span>
   </ng-container>
   <span *ngIf="!isContainer" class="node-value" [ngClass]="'type-' + node.type" [innerHTML]="valueHtml"></span>
