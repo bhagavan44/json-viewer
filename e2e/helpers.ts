@@ -1,9 +1,15 @@
 import { Page } from '@playwright/test';
+import { deflateRawSync } from 'node:zlib';
 
-/** Builds an uncompressed `#s=` share link, the same format `encodeShare()` writes. */
+/**
+ * Builds a `#s=` share link, the same format `encodeShare()` writes: uncompressed, or
+ * compressed for large documents (an uncompressed link is limited in length).
+ */
 export function shareHash(left: string, right: string, view: 'edit' | 'compare' = 'edit'): string {
-  const json = JSON.stringify({ v: 1, l: left, r: right, m: view });
-  return '#s=r.' + Buffer.from(json, 'utf8').toString('base64url');
+  const json = Buffer.from(JSON.stringify({ v: 1, l: left, r: right, m: view }), 'utf8');
+  return json.length > 50_000
+    ? '#s=z.' + deflateRawSync(json).toString('base64url')
+    : '#s=r.' + json.toString('base64url');
 }
 
 /** Opens the app with both panes filled from a share link. */

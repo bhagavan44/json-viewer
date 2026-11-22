@@ -38,6 +38,23 @@
       letter-spacing: 0.5px;
       color: var(--header-color);
     }
+
+    .app-version {
+      font: 500 11px var(--font-mono);
+      color: rgba(255, 255, 255, 0.55);
+      text-decoration: none;
+
+      &:hover {
+        color: var(--header-color);
+        text-decoration: underline;
+      }
+
+      &:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+        border-radius: 2px;
+      }
+    }
   }
 
   .header-actions {
@@ -184,7 +201,8 @@
 
 // ─── Very narrow screens: keep the whole header on one row ───────────────────
 @media (max-width: 480px) {
-  .app-header .app-title {
+  .app-header .app-title,
+  .app-header .app-version {
     display: none;
   }
 }

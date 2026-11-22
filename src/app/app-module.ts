@@ -26,9 +26,6 @@ import { FilesPanelComponent } from './components/files-panel/files-panel.compon
 import { AppHeaderComponent } from './components/app-header/app-header.component';
 import { CompareBarComponent } from './components/compare-bar/compare-bar.component';
 
-import { inject } from "@vercel/analytics"
-inject();
-
 @NgModule({
   declarations: [
     App,

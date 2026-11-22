@@ -55,6 +55,28 @@ test('compares two documents', async ({ page }) => {
   await expect(page.locator('.changes-header')).toContainText('3 differences');
 });
 
+test('compares large documents in a Web Worker', async ({ page }) => {
+  const workers: string[] = [];
+  page.on('worker', (w) => workers.push(w.url()));
+  const items = (n: number, qty: (i: number) => number) =>
+    JSON.stringify(
+      Array.from({ length: n }, (_, i) => ({ id: i, name: `Item number ${i}`, qty: qty(i) })),
+      null,
+      2,
+    );
+  // About 300 kB each: well above the size at which Compare moves to the worker.
+  const before = items(4000, () => 1);
+  const after = items(4001, (i) => (i % 1000 === 0 ? 2 : 1));
+  await openShared(page, before, after, 'compare');
+
+  const bar = page.locator('.compare-bar');
+  await expect(bar.locator('.stat.add')).toContainText('+1 added');
+  await expect(bar.locator('.stat.chg')).toContainText('~4 changed');
+  await expect(page.locator('.changes-header')).toContainText('5 differences');
+  await expect(page.locator('.change-item').first()).toContainText('1 → 2');
+  expect(workers.some((url) => /\/worker-[A-Z0-9]+\.js(\?|$)/.test(url))).toBe(true);
+});
+
 test('opens the command palette with Ctrl+K', async ({ page }) => {
   await page.goto('/');
   await expect(leftPanel(page).locator('.monaco-editor')).toBeVisible();
