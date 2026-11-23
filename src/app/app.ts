@@ -118,9 +118,6 @@ const MIN_PANE_WIDTH = 200;
 /** Below this width the files sidebar becomes an overlay drawer. */
 const NARROW_BREAKPOINT = 1000;
 const THEME_KEY = 'json-viewer-theme';
-const SESSION_KEY = 'json-viewer-session';
-/** Unsaved text longer than this is not kept in the session (it would not fit in browser storage). */
-const MAX_SESSION_TEXT = 2_000_000;
 
 interface PaneSession {
   /** Unsaved text. Omitted when the pane just mirrors a saved file. */
@@ -218,7 +215,7 @@ export class App implements DoCheck, OnDestroy {
 
   private async init(): Promise<void> {
     this.savedFiles = await this.loadFiles();
-    if (!this.restoreSession()) {
+    if (!(await this.restoreSession())) {
       // First visit with saved files: start with the two most recent side by side.
       const [first, second] = this.savedFiles;
       if (first) this.assignFile(first, this.left);
@@ -1164,7 +1161,7 @@ export class App implements DoCheck, OnDestroy {
       ig: this.ignoreText,
     });
     clearTimeout(this.sessionTimer);
-    this.sessionTimer = setTimeout(() => this.persistSession(), 500);
+    this.sessionTimer = setTimeout(() => void this.persistSession(), 500);
   }
 
   /** Saves at once when the tab is hidden or closed, so a change made just before is not lost. */
@@ -1172,7 +1169,7 @@ export class App implements DoCheck, OnDestroy {
   flushSession(): void {
     if (!this.loaded) return;
     clearTimeout(this.sessionTimer);
-    this.persistSession();
+    void this.persistSession();
   }
 
   @HostListener('document:visibilitychange')
@@ -1183,7 +1180,7 @@ export class App implements DoCheck, OnDestroy {
   private paneSession(panel: PanelState): PaneSession {
     const file = this.savedFiles.find((f) => f.id === panel.currentFileId);
     const matchesFile = !!file && file.content === panel.jsonText;
-    const keepText = !matchesFile && panel.jsonText.length <= MAX_SESSION_TEXT;
+    const keepText = !matchesFile && panel.jsonText.length <= this.store.maxSessionText;
     return {
       text: keepText ? panel.jsonText : null,
       fileId: panel.currentFileId,
@@ -1192,7 +1189,8 @@ export class App implements DoCheck, OnDestroy {
     };
   }
 
-  persistSession(): void {
+  /** Writes the session without blocking typing. Resolves once it is stored (or the browser refused). */
+  async persistSession(): Promise<void> {
     const session: Session = {
       version: 1,
       left: this.paneSession(this.left),
@@ -1203,19 +1201,17 @@ export class App implements DoCheck, OnDestroy {
       ignoreText: this.ignoreText,
     };
     try {
-      localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+      await this.store.saveSession(session);
     } catch {
       /* storage full or unavailable: the session just will not be restored */
     }
   }
 
   /** Returns true when a stored session was applied. */
-  private restoreSession(): boolean {
+  private async restoreSession(): Promise<boolean> {
     let session: Session;
     try {
-      const raw = localStorage.getItem(SESSION_KEY);
-      if (!raw) return false;
-      session = JSON.parse(raw);
+      session = (await this.store.loadSession()) as Session;
     } catch {
       return false;
     }
