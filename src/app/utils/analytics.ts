@@ -25,11 +25,32 @@ export function isLocalHost(hostname: string): boolean {
 }
 
 /**
+ * Custom domains that are served by Vercel, in addition to every `*.vercel.app` host. Vercel
+ * serves the analytics script (`/_vercel/insights/script.js`) only there, so on any other host
+ * the request would 404 and log a console error on every page load.
+ */
+export const VERCEL_ANALYTICS_HOSTS: readonly string[] = ['json.mvtech.dev'];
+
+/**
+ * True when the page is served from a host that can deliver the Vercel analytics script: a
+ * `*.vercel.app` deployment or one of {@link VERCEL_ANALYTICS_HOSTS}. Case-insensitive.
+ */
+export function isVercelHost(
+  hostname: string,
+  extraHosts: readonly string[] = VERCEL_ANALYTICS_HOSTS,
+): boolean {
+  const host = hostname.toLowerCase();
+  return host.endsWith('.vercel.app') || extraHosts.some((h) => h.toLowerCase() === host);
+}
+
+/**
  * Starts anonymous page-view analytics (Vercel Web Analytics). Call it in production builds only.
- * It does nothing on localhost or a loopback address, so the end-to-end tests (which serve a
- * production build on localhost) never report.
+ * It does nothing unless the page is served from Vercel (see {@link isVercelHost}), so a build
+ * hosted elsewhere (nginx, GitHub Pages, a static server) makes no request for the script. It also
+ * skips localhost and loopback addresses, so the end-to-end tests (which serve a production build
+ * on localhost) never report.
  */
 export function startAnalytics(hostname: string = location.hostname): void {
-  if (isLocalHost(hostname)) return;
+  if (isLocalHost(hostname) || !isVercelHost(hostname)) return;
   inject({ beforeSend: stripUrlHash });
 }

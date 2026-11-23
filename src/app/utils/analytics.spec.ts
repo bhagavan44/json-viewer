@@ -1,5 +1,5 @@
 import { inject } from '@vercel/analytics';
-import { isLocalHost, startAnalytics, stripUrlHash } from './analytics';
+import { isLocalHost, isVercelHost, startAnalytics, stripUrlHash } from './analytics';
 
 vi.mock('@vercel/analytics', () => ({ inject: vi.fn() }));
 
@@ -47,18 +47,50 @@ describe('analytics', () => {
     }
   });
 
+  describe('isVercelHost', () => {
+    it('matches *.vercel.app hosts, ignoring case', () => {
+      for (const host of ['json-viewer.vercel.app', 'my-fork-git-main.vercel.app', 'A.VERCEL.APP']) {
+        expect(isVercelHost(host), host).toBe(true);
+      }
+    });
+
+    it('matches the production custom domain by default', () => {
+      expect(isVercelHost('json.mvtech.dev')).toBe(true);
+      expect(isVercelHost('mvtech.dev')).toBe(false);
+    });
+
+    it('matches the configured extra hosts, ignoring case', () => {
+      expect(isVercelHost('Json.Example.com', ['json.example.com'])).toBe(true);
+    });
+
+    it('does not match other hosts', () => {
+      for (const host of [
+        'example.com',
+        'vercel.app',
+        'evilvercel.app',
+        'json-viewer.vercel.app.evil.com',
+        'user.github.io',
+        '192.168.1.20',
+      ]) {
+        expect(isVercelHost(host, ['json.example.com']), host).toBe(false);
+      }
+    });
+  });
+
   describe('startAnalytics', () => {
     beforeEach(() => vi.mocked(inject).mockClear());
 
-    it('injects the script on a public host and strips the URL hash from events', () => {
+    it('injects the script on a Vercel host and strips the URL hash from events', () => {
       startAnalytics('json-viewer.vercel.app');
       expect(inject).toHaveBeenCalledTimes(1);
       expect(inject).toHaveBeenCalledWith({ beforeSend: stripUrlHash });
     });
 
-    it('injects the script on a LAN address', () => {
-      startAnalytics('192.168.1.20');
-      expect(inject).toHaveBeenCalledTimes(1);
+    it('does not inject the script on a host that is not served by Vercel', () => {
+      for (const host of ['192.168.1.20', 'example.com', 'user.github.io']) {
+        startAnalytics(host);
+      }
+      expect(inject).not.toHaveBeenCalled();
     });
 
     it('does not inject the script on localhost or a loopback address', () => {
