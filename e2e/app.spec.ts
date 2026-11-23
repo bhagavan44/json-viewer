@@ -115,3 +115,27 @@ test('restores the session from IndexedDB after a reload', async ({ page }) => {
   await expect(left.locator('.status-badge')).toContainText('Valid');
   await expect(rightPanel(page).locator('.status-badge')).toContainText('Valid');
 });
+
+test('loads every Monaco file the editor asks for while editing', async ({ page }) => {
+  // angular.json copies only part of Monaco into /vs/. A 404 here means the ignore list
+  // removed something the JSON editor needs (the SPA rewrite would hide it in production).
+  const missing: string[] = [];
+  page.on('response', (response) => {
+    const url = new URL(response.url());
+    if (url.pathname.startsWith('/vs/') && !response.ok()) missing.push(url.pathname);
+  });
+
+  await page.goto('/');
+  const editor = leftPanel(page).locator('.monaco-editor');
+  await expect(editor).toBeVisible();
+  await editor.click();
+  await page.keyboard.type('{"a": [1, tru');
+  await page.keyboard.press('Control+Space');
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Control+F');
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Shift+Alt+F');
+  await expect(leftPanel(page).locator('.status-badge')).toContainText('Invalid');
+
+  expect(missing).toEqual([]);
+});
