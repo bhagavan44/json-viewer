@@ -18,11 +18,25 @@ export interface FileStore {
   delete(id: string): Promise<void>;
   /** Calls `listener` when another tab changes the files. */
   watch(listener: () => void): () => void;
+  /** The last saved session, or null when there is none. The caller validates its shape. */
+  loadSession(): Promise<unknown>;
+  /** Replaces the saved session. Rejects when the browser refuses (e.g. storage full). */
+  saveSession(session: unknown): Promise<void>;
+  /** Longest unsaved text, in characters, that the session may keep for one pane. */
+  readonly maxSessionText: number;
 }
 
 export const LEGACY_FILES_KEY = 'json-viewer-files';
+export const LEGACY_SESSION_KEY = 'json-viewer-session';
 const DB_NAME = 'json-viewer';
+const DB_VERSION = 2;
 const STORE = 'files';
+const SESSION_STORE = 'session';
+/** The session is one record under this key. */
+const SESSION_ID = 'current';
+/** localStorage holds about 5 MB for the whole origin, shared with the saved-files fallback. */
+const LOCAL_SESSION_LIMIT = 2_000_000;
+const INDEXED_DB_SESSION_LIMIT = 20_000_000;
 const CHANNEL = 'json-viewer-files';
 
 const newestFirst = (files: SavedFile[]) => files.sort((a, b) => b.savedAt - a.savedAt);
@@ -41,6 +55,15 @@ function readLegacy(): SavedFile[] {
   }
 }
 
+function readLegacySession(): unknown {
+  try {
+    const raw = localStorage.getItem(LEGACY_SESSION_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
 const done = (req: IDBRequest | IDBTransaction) =>
   new Promise<void>((resolve, reject) => {
     if (req instanceof IDBTransaction) {
@@ -56,29 +79,51 @@ const done = (req: IDBRequest | IDBTransaction) =>
 export class IndexedDbFileStore implements FileStore {
   private db?: Promise<IDBDatabase>;
   private channel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel(CHANNEL) : null;
+  readonly maxSessionText = INDEXED_DB_SESSION_LIMIT;
 
   private open(): Promise<IDBDatabase> {
     return (this.db ??= new Promise<IDBDatabase>((resolve, reject) => {
-      const req = indexedDB.open(DB_NAME, 1);
-      req.onupgradeneeded = () => req.result.createObjectStore(STORE, { keyPath: 'id' });
-      req.onsuccess = () => resolve(req.result);
+      const req = indexedDB.open(DB_NAME, DB_VERSION);
+      req.onupgradeneeded = (e) => {
+        const db = req.result;
+        if (e.oldVersion < 1) db.createObjectStore(STORE, { keyPath: 'id' });
+        if (e.oldVersion < 2) db.createObjectStore(SESSION_STORE);
+      };
+      req.onsuccess = () => {
+        const db = req.result;
+        // Let a newer version of the app upgrade the database while this tab is still open.
+        db.onversionchange = () => db.close();
+        resolve(db);
+      };
       req.onerror = () => reject(req.error);
+      // A tab running the previous version keeps the old schema open and blocks the upgrade.
+      // Fail instead of waiting, so the app falls back to local storage until that tab closes.
+      req.onblocked = () => reject(new Error('Database upgrade blocked by another tab'));
     }).then((db) => this.migrate(db)));
   }
 
-  /** Moves files saved by earlier versions (in localStorage) into the database, once. */
+  /** Moves files and the session saved by earlier versions (in localStorage) into the database, once. */
   private async migrate(db: IDBDatabase): Promise<IDBDatabase> {
     const legacy = readLegacy();
-    if (legacy.length) {
-      const tx = db.transaction(STORE, 'readwrite');
+    const legacySession = readLegacySession();
+    if (legacy.length || legacySession) {
+      const tx = db.transaction([STORE, SESSION_STORE], 'readwrite');
       // `add` keeps any newer copy that is already in the database.
-      for (const f of legacy) tx.objectStore(STORE).add(f).onerror = (e) => e.preventDefault();
+      const keepExisting = (e: Event) => {
+        // A duplicate key is expected. Stop the event, or it aborts the whole transaction.
+        e.preventDefault();
+        e.stopPropagation();
+      };
+      for (const f of legacy) tx.objectStore(STORE).add(f).onerror = keepExisting;
+      if (legacySession) tx.objectStore(SESSION_STORE).add(legacySession, SESSION_ID).onerror = keepExisting;
       await done(tx);
     }
-    try {
-      localStorage.removeItem(LEGACY_FILES_KEY);
-    } catch {
-      /* ignore */
+    for (const key of [LEGACY_FILES_KEY, LEGACY_SESSION_KEY]) {
+      try {
+        localStorage.removeItem(key);
+      } catch {
+        /* ignore */
+      }
     }
     return db;
   }
@@ -104,6 +149,18 @@ export class IndexedDbFileStore implements FileStore {
     this.channel?.postMessage('changed');
   }
 
+  async loadSession(): Promise<unknown> {
+    const req = (await this.open()).transaction(SESSION_STORE).objectStore(SESSION_STORE).get(SESSION_ID);
+    await done(req);
+    return req.result ?? null;
+  }
+
+  async saveSession(session: unknown): Promise<void> {
+    const tx = (await this.open()).transaction(SESSION_STORE, 'readwrite');
+    tx.objectStore(SESSION_STORE).put(session, SESSION_ID);
+    await done(tx);
+  }
+
   watch(listener: () => void): () => void {
     const ch = this.channel;
     if (!ch) return () => {};
@@ -118,6 +175,8 @@ export class IndexedDbFileStore implements FileStore {
  * changes only its own file, so concurrent tabs do not lose each other's saves.
  */
 export class LocalStorageFileStore implements FileStore {
+  readonly maxSessionText = LOCAL_SESSION_LIMIT;
+
   async load(): Promise<SavedFile[]> {
     return newestFirst(readLegacy());
   }
@@ -128,6 +187,14 @@ export class LocalStorageFileStore implements FileStore {
 
   async delete(id: string): Promise<void> {
     this.write(readLegacy().filter((f) => f.id !== id));
+  }
+
+  async loadSession(): Promise<unknown> {
+    return readLegacySession();
+  }
+
+  async saveSession(session: unknown): Promise<void> {
+    localStorage.setItem(LEGACY_SESSION_KEY, JSON.stringify(session));
   }
 
   /** Throws (so the caller's save is reported as failed) when storage is full. */

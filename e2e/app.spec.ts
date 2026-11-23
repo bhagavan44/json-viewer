@@ -86,3 +86,32 @@ test('opens the command palette with Ctrl+K', async ({ page }) => {
   await page.keyboard.press('Escape');
   await expect(search).toBeHidden();
 });
+
+test('restores the session from IndexedDB after a reload', async ({ page }) => {
+  await openShared(page, '{"draft":"kept after reload"}', '[1,2,3]');
+  // Autosave runs 500 ms after a change; wait until the session is in IndexedDB.
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          new Promise<string | null>((resolve) => {
+            const open = indexedDB.open('json-viewer');
+            open.onerror = () => resolve(null);
+            open.onsuccess = () => {
+              const db = open.result;
+              if (!db.objectStoreNames.contains('session')) return resolve(null), db.close();
+              const get = db.transaction('session').objectStore('session').get('current');
+              get.onsuccess = () => (resolve(get.result?.left?.text ?? null), db.close());
+              get.onerror = () => (resolve(null), db.close());
+            };
+          }),
+      ),
+    )
+    .toContain('kept after reload');
+  expect(await page.evaluate(() => localStorage.getItem('json-viewer-session'))).toBeNull();
+
+  await page.reload();
+  const left = leftPanel(page);
+  await expect(left.locator('.status-badge')).toContainText('Valid');
+  await expect(rightPanel(page).locator('.status-badge')).toContainText('Valid');
+});

@@ -465,7 +465,7 @@ describe('App', () => {
     it('keeps the ignored paths in the session', async () => {
       const first = await create();
       first.ignoreText = '$..updatedAt';
-      first.persistSession();
+      await first.persistSession();
       expect((await create()).ignoreText).toBe('$..updatedAt');
     });
   });
@@ -773,7 +773,7 @@ describe('App', () => {
       first.right.mode = 'tree';
       first.left.mode = 'table';
       first.viewMode = 'compare';
-      first.persistSession();
+      await first.persistSession();
 
       const second = await create();
       expect(second.left.jsonText).toBe('{"draft":1}');
@@ -789,7 +789,7 @@ describe('App', () => {
       first.savedFiles = [f];
       localStorage.setItem('json-viewer-files', JSON.stringify([f]));
       first.openFileIn(f, first.left);
-      first.persistSession();
+      await first.persistSession();
 
       const stored = JSON.parse(localStorage.getItem('json-viewer-session')!);
       expect(stored.left.text).toBeNull();
@@ -807,7 +807,7 @@ describe('App', () => {
       localStorage.setItem('json-viewer-files', JSON.stringify([f]));
       first.openFileIn(f, first.left);
       first.onTextChange('{"a":99}', first.left);
-      first.persistSession();
+      await first.persistSession();
 
       expect((await create()).left.jsonText).toBe('{"a":99}');
     });
@@ -818,6 +818,38 @@ describe('App', () => {
       app.ngDoCheck(); // schedules the delayed save
       window.dispatchEvent(new Event('pagehide'));
       expect(JSON.parse(localStorage.getItem('json-viewer-session')!).left.text).toBe('{"last":"edit"}');
+    });
+
+    it('keeps the session in IndexedDB when it is available, and moves an old one over', async () => {
+      const { IDBFactory, IDBTransaction } = await import('fake-indexeddb');
+      const g = globalThis as any;
+      const original = { indexedDB: g.indexedDB, IDBTransaction: g.IDBTransaction };
+      g.indexedDB = new IDBFactory();
+      g.IDBTransaction = IDBTransaction;
+      try {
+        localStorage.setItem(
+          'json-viewer-session',
+          JSON.stringify({
+            version: 1,
+            left: { text: '{"old":1}', fileId: null, sourceName: null, mode: 'editor' },
+            right: { text: null, fileId: null, sourceName: null, mode: 'editor' },
+            viewMode: 'edit',
+            active: 'left',
+          }),
+        );
+        const first = await create();
+        expect(first.left.jsonText).toBe('{"old":1}');
+        expect(localStorage.getItem('json-viewer-session')).toBeNull();
+
+        first.onTextChange('{"new":2}', first.left);
+        await first.persistSession();
+        expect(localStorage.getItem('json-viewer-session')).toBeNull();
+
+        expect((await create()).left.jsonText).toBe('{"new":2}');
+      } finally {
+        g.indexedDB = original.indexedDB;
+        g.IDBTransaction = original.IDBTransaction;
+      }
     });
 
     it('ignores a corrupt session and falls back to the most recent saved files', async () => {
@@ -861,7 +893,7 @@ describe('App', () => {
     it('opens a share link found in the address bar at startup, over the restored session', async () => {
       const first = await create();
       first.onTextChange('{"session":1}', first.left);
-      first.persistSession();
+      await first.persistSession();
 
       const payload = await encodeShare({ left: '{"shared":1}', right: '', view: 'edit' });
       history.replaceState(null, '', location.pathname + SHARE_HASH_PREFIX + payload);
