@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.4.1](https://github.com/bhagavan44/json-viewer/compare/v0.4.0...v0.4.1) (2026-11-23)
+
+
+### Bug Fixes
+
+* load analytics only on Vercel-served hosts ([#78](https://github.com/bhagavan44/json-viewer/issues/78)) ([dea3eb6](https://github.com/bhagavan44/json-viewer/commit/dea3eb6e917bec8348714118dd3cee260716576c))
+
+
+### Performance
+
+* cache lowercased keys and values for tree text search ([#80](https://github.com/bhagavan44/json-viewer/issues/80)) ([715d892](https://github.com/bhagavan44/json-viewer/commit/715d892cad8df77435dfa7f6222a4753ccc37f29))
+* copy only the Monaco files the JSON editor needs ([#82](https://github.com/bhagavan44/json-viewer/issues/82)) ([022fbcc](https://github.com/bhagavan44/json-viewer/commit/022fbcc30c364cd3df2e52ae74c7d1284ed4efce))
+* store the session in IndexedDB instead of localStorage ([#81](https://github.com/bhagavan44/json-viewer/issues/81)) ([705cdd5](https://github.com/bhagavan44/json-viewer/commit/705cdd5a6065e9e24344846d3a308c34ccf47549))
+
 ## [0.4.0](https://github.com/bhagavan44/json-viewer/compare/v0.3.0...v0.4.0) (2026-11-22)
 
 
