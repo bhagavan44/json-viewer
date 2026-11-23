@@ -21,6 +21,25 @@ describe('findText', () => {
   it('does not match containers by their value', () => {
     expect(findText(DOC, 'object')).toEqual([]);
   });
+
+  it('gives the same results when a document is searched again with other queries', () => {
+    const doc = parseJson('{"Name": "Priya", "list": ["PRIYA", 1]}');
+    expect(findText(doc, 'priya')).toEqual(['$.Name', '$.list[0]']);
+    expect(findText(doc, 'name')).toEqual(['$.Name']);
+    expect(findText(doc, 'priya')).toEqual(['$.Name', '$.list[0]']);
+    expect(findText(doc, 'zzz')).toEqual([]);
+  });
+
+  it('does not mix up results between documents', () => {
+    expect(findText(parseJson('{"a": 1}'), 'a')).toEqual(['$.a']);
+    expect(findText(parseJson('{"b": 1}'), 'a')).toEqual([]);
+  });
+
+  it('searches a scalar root and a null root', () => {
+    expect(findText('Hello', 'ell')).toEqual(['$']);
+    expect(findText(null, 'nul')).toEqual(['$']);
+    expect(findText(null, 'ell')).toEqual([]);
+  });
 });
 
 describe('countValues', () => {
