@@ -243,7 +243,7 @@
       border-radius: 4px;
       background: none;
       color: var(--text-secondary);
-      font: 700 11px 'Roboto', sans-serif;
+      font: 700 11px var(--font-sans);
       cursor: pointer;
 
       mat-icon {
