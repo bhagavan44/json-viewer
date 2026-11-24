@@ -21,6 +21,7 @@
     "@angular/material": "~22.3.0",
     "@angular/platform-browser": "^22.2.6",
     "@angular/router": "^22.2.6",
+    "@angular/service-worker": "^22.2.6",
     "@vercel/analytics": "^2.0.1",
     "monaco-editor": "^0.57.0",
     "rxjs": "~7.8.0",

@@ -1,5 +1,6 @@
 import {
   NgModule,
+  isDevMode,
   provideBrowserGlobalErrorListeners,
   provideZonelessChangeDetection,
 } from '@angular/core';
@@ -13,6 +14,7 @@ import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatBadgeModule } from '@angular/material/badge';
 import { ScrollingModule } from '@angular/cdk/scrolling';
+import { provideServiceWorker } from '@angular/service-worker';
 
 import { App } from './app';
 import { JsonEditorComponent } from './components/json-editor/json-editor.component';
@@ -54,6 +56,12 @@ import { CompareBarComponent } from './components/compare-bar/compare-bar.compon
     provideBrowserGlobalErrorListeners(),
     // No zone.js: rendering is driven by signals, template events and markForCheck().
     provideZonelessChangeDetection(),
+    // Offline support and installability. Production builds only; `registerWhenStable` keeps the
+    // first load free of service worker traffic.
+    provideServiceWorker('ngsw-worker.js', {
+      enabled: !isDevMode(),
+      registrationStrategy: 'registerWhenStable:30000',
+    }),
   ],
   bootstrap: [App]
 })

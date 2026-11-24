@@ -12,6 +12,7 @@ Built with Angular 22, Angular Material and the Monaco editor.
 - Open a file from disk (pick two to fill both panes), or drop files onto a pane. **Download** a pane as `.json`.
 - Your session is restored on reload: both panes, unsaved text, view modes.
 - Files you save are kept in the browser (IndexedDB). Several tabs can save at the same time without losing each other's files, and every tab's list stays up to date. Deleting a file offers **Undo**.
+- Works offline and can be installed as an app: a service worker (production builds) caches the app after the first visit, and the editor's files the first time you use them. When a new version has downloaded, a message offers **Reload**.
 
 **Find things**
 - Tree search with highlighted matches, next/previous, and a filter that hides everything else.
