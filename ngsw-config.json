@@ -1,0 +1,31 @@
+{
+  "$schema": "./node_modules/@angular/service-worker/config/schema.json",
+  "index": "/index.html",
+  "assetGroups": [
+    {
+      "name": "app",
+      "installMode": "prefetch",
+      "resources": {
+        "files": [
+          "/favicon.svg",
+          "/favicon.ico",
+          "/apple-touch-icon.png",
+          "/icon-*.png",
+          "/index.html",
+          "/manifest.webmanifest",
+          "/*.css",
+          "/*.js",
+          "/fonts/*.woff2"
+        ]
+      }
+    },
+    {
+      "name": "monaco",
+      "installMode": "lazy",
+      "updateMode": "prefetch",
+      "resources": {
+        "files": ["/vs/**"]
+      }
+    }
+  ]
+}

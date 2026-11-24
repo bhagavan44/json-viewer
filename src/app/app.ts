@@ -5,9 +5,12 @@ import {
   ElementRef,
   HostListener,
   OnDestroy,
+  Optional,
   ViewChild,
 } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { SwUpdate } from '@angular/service-worker';
+import { Subscription } from 'rxjs';
 import { DiffEntry, DiffKind, DiffResult } from './utils/json-diff';
 import type { SchemaError, ValidateOutcome, ValidationResult } from './utils/json-schema-validate';
 import {
@@ -202,9 +205,11 @@ export class App implements DoCheck, OnDestroy {
   constructor(
     private snackBar: MatSnackBar,
     private cdr: ChangeDetectorRef,
+    @Optional() private swUpdate: SwUpdate | null,
   ) {
     this.activePanel = this.left;
     this.loadPersistedTheme();
+    this.watchForUpdates();
     this.ready = this.init();
   }
 
@@ -269,7 +274,22 @@ export class App implements DoCheck, OnDestroy {
     }
   }
 
+  private updateSub?: Subscription;
+
+  /** Offers a reload once the service worker has downloaded a new version of the app. */
+  private watchForUpdates(): void {
+    if (!this.swUpdate?.isEnabled) return;
+    this.updateSub = this.swUpdate.versionUpdates.subscribe((event) => {
+      if (event.type !== 'VERSION_READY') return;
+      this.snackBar
+        .open('A new version is available.', 'Reload')
+        .onAction()
+        .subscribe(() => location.reload());
+    });
+  }
+
   ngOnDestroy(): void {
+    this.updateSub?.unsubscribe();
     this.unwatchFiles?.();
     clearTimeout(this.sessionTimer);
     for (const timer of this.parseTimers.values()) clearTimeout(timer);
