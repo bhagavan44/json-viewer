@@ -1,11 +1,6 @@
-import {
-  CompareOutcome,
-  ValidateOutcome,
-  compareDocuments,
-  validateDocument,
-  withoutDiffValues,
-} from './json-compare';
+import { CompareOutcome, compareDocuments, withoutDiffValues } from './json-compare';
 import { parseJson } from './json-parse';
+import { ValidateOutcome, validateDocument } from './json-schema-validate';
 
 /** Work sent to the JSON worker. Documents travel as text and are parsed there. */
 export type JsonWorkerRequest =

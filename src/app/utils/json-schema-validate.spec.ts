@@ -1,6 +1,6 @@
 import { parseJson } from './json-parse';
 import { toJsonSchema } from './json-schema';
-import { SchemaLoadError, looksLikeSchema, validateSchema } from './json-schema-validate';
+import { SchemaLoadError, validateDocument, validateSchema } from './json-schema-validate';
 
 const ORDER_SCHEMA = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
@@ -114,11 +114,10 @@ describe('validateSchema', () => {
   });
 });
 
-describe('looksLikeSchema', () => {
-  it('recognises schemas', () => {
-    expect(looksLikeSchema(ORDER_SCHEMA)).toBe(true);
-    expect(looksLikeSchema({ type: 'object', properties: {} })).toBe(true);
-    expect(looksLikeSchema({ type: 'order', id: 1 })).toBe(false);
+describe('validateDocument', () => {
+  it('returns the result, or why the schema cannot be used', () => {
+    expect(validateDocument(1, { type: 'string' }).result!.errors).toHaveLength(1);
+    expect(validateDocument(1, { $ref: '#/nope' }).schemaError).toMatch(/^Reference/);
   });
 });
 

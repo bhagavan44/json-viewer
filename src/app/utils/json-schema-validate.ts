@@ -242,9 +242,17 @@ export function validateSchema(doc: unknown, schema: unknown): ValidationResult 
   return { errors: errors.slice(0, MAX_ERRORS), truncated, unsupported: [...unsupported] };
 }
 
-/** True when a document looks like a JSON Schema (to suggest validating against it). */
-export function looksLikeSchema(value: unknown): boolean {
-  if (jsonTypeOf(value) !== 'object') return false;
-  const v = value as Record<string, unknown>;
-  return typeof v['$schema'] === 'string' || (v['type'] === 'object' && jsonTypeOf(v['properties']) === 'object');
+export interface ValidateOutcome {
+  result?: ValidationResult;
+  /** Why the schema cannot be used, when it cannot. */
+  schemaError?: string;
+}
+
+/** Validates a parsed document against a parsed schema, reporting a schema that cannot be used. */
+export function validateDocument(doc: unknown, schema: unknown): ValidateOutcome {
+  try {
+    return { result: validateSchema(doc, schema) };
+  } catch (e) {
+    return { schemaError: e instanceof SchemaLoadError ? e.message : 'unexpected error' };
+  }
 }

@@ -9,22 +9,25 @@ import {
 } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { DiffEntry, DiffKind, DiffResult } from './utils/json-diff';
-import { jsonPatch } from './utils/json-patch';
-import { SchemaError, ValidationResult, looksLikeSchema } from './utils/json-schema-validate';
+import type { SchemaError, ValidateOutcome, ValidationResult } from './utils/json-schema-validate';
 import {
   CompareOutcome,
-  ValidateOutcome,
   compareDocuments,
   ignoreTextError,
   resolveIgnoredPaths,
-  validateDocument,
   withDiffValues,
 } from './utils/json-compare';
 import { JsonWorkerClient } from './utils/json-worker-client';
 import { parseJson, stringifyJson } from './utils/json-parse';
-import { byteLength, childPath, formatBytes, jsonTypeOf, summarizeValue } from './utils/json-utils';
+import {
+  byteLength,
+  childPath,
+  formatBytes,
+  jsonTypeOf,
+  looksLikeSchema,
+  summarizeValue,
+} from './utils/json-utils';
 import { JsonErrorLocation, friendlyJsonError, locateJsonError } from './utils/json-error';
-import { toCSharp, toTypeScript, toYaml } from './utils/json-convert';
 import { parseEmbedded, replaceAt, unwrapAll } from './utils/json-unwrap';
 import { TextFix, findTextFix, toJsonLines } from './utils/json-repair';
 import {
@@ -35,9 +38,7 @@ import {
   valueAtPath,
 } from './utils/json-locate';
 import { EditError, addChild, deleteAt, renameKey, setValue } from './utils/json-edit';
-import { describeRedaction, redact } from './utils/json-redact';
 import { TreeEdit } from './components/json-tree/json-tree.component';
-import { toJsonSchema } from './utils/json-schema';
 import {
   SHARE_HASH_PREFIX,
   SHARE_MAX_CHARS,
@@ -226,6 +227,26 @@ export class App implements DoCheck, OnDestroy {
     this.loaded = true;
     this.unwatchFiles = this.store.watch(() => void this.reloadFiles());
     this.cdr.markForCheck();
+    this.preloadRareFeatures();
+  }
+
+  /**
+   * Fetches the rarely used code (converters, redaction, JSON Patch, schema validation) once the
+   * browser is idle. It stays out of the initial bundle, but a command that writes to the
+   * clipboard rarely waits for a download, which could lose the click it was started by.
+   */
+  private preloadRareFeatures(): void {
+    if (typeof requestIdleCallback !== 'function') return;
+    requestIdleCallback(() => {
+      const chunks = [
+        import('./utils/json-convert'),
+        import('./utils/json-schema'),
+        import('./utils/json-redact'),
+        import('./utils/json-patch'),
+        import('./utils/json-schema-validate'),
+      ];
+      for (const chunk of chunks) chunk.catch(() => undefined);
+    });
   }
 
   private async loadFiles(): Promise<SavedFile[]> {
@@ -425,7 +446,8 @@ export class App implements DoCheck, OnDestroy {
 
   // ── Sensitive data ─────────────────────────────────────────────────────────
   /** Copies the pane's JSON with passwords, tokens, emails, card numbers... hidden. */
-  copyRedacted(panel: PanelState): void {
+  async copyRedacted(panel: PanelState): Promise<void> {
+    const { describeRedaction, redact } = await import('./utils/json-redact');
     this.ensureParsed(panel);
     if (!this.isReady(panel)) return;
     const r = redact(panel.parsedJson);
@@ -446,7 +468,8 @@ export class App implements DoCheck, OnDestroy {
   }
 
   /** Hides sensitive values in the pane itself; the snackbar offers Undo. */
-  redactPane(panel: PanelState): void {
+  async redactPane(panel: PanelState): Promise<void> {
+    const { describeRedaction, redact } = await import('./utils/json-redact');
     this.ensureParsed(panel);
     if (!this.isReady(panel)) return;
     const r = redact(panel.parsedJson);
@@ -772,7 +795,8 @@ export class App implements DoCheck, OnDestroy {
   }
 
   /** Copies an RFC 6902 patch that turns the left document into the right one. */
-  copyPatch(): void {
+  async copyPatch(): Promise<void> {
+    const { jsonPatch } = await import('./utils/json-patch');
     this.ensureParsed(this.left, this.right);
     if (!this.compareReady) return;
     const a = this.left.parsedJson;
@@ -833,7 +857,7 @@ export class App implements DoCheck, OnDestroy {
     this.validationMemo = next;
     const texts = this.workerTexts(doc, schema);
     if (texts) void this.validateInWorker(next, texts);
-    else next.view = this.validationView(docSide, validateDocument(doc, schema));
+    else void this.validateHere(next);
     return next.view;
   }
 
@@ -842,6 +866,14 @@ export class App implements DoCheck, OnDestroy {
     return outcome.result
       ? { docSide, schemaSide, result: outcome.result }
       : { docSide, schemaSide, problem: `The schema cannot be used: ${outcome.schemaError}.` };
+  }
+
+  /** Validates on this thread (small documents); the validator loads on first use. */
+  private async validateHere(memo: NonNullable<App['validationMemo']>): Promise<void> {
+    const { validateDocument } = await import('./utils/json-schema-validate');
+    if (this.validationMemo !== memo) return;
+    memo.view = this.validationView(memo.view.docSide, validateDocument(memo.doc, memo.schema));
+    this.cdr.markForCheck();
   }
 
   private async validateInWorker(
@@ -854,6 +886,7 @@ export class App implements DoCheck, OnDestroy {
       if (!reply) return; // a newer validation replaced this one
       outcome = reply;
     } catch {
+      const { validateDocument } = await import('./utils/json-schema-validate');
       outcome = validateDocument(memo.doc, memo.schema);
     }
     if (this.validationMemo !== memo) return;
@@ -1248,6 +1281,7 @@ export class App implements DoCheck, OnDestroy {
     }
     let hidden = 0;
     if (hideSensitive) {
+      const { redact } = await import('./utils/json-redact');
       const panes = [this.left, this.right].filter((p) => p.jsonText.trim());
       const invalid = panes.find((p) => !this.isReady(p));
       if (invalid) {
@@ -1413,11 +1447,19 @@ export class App implements DoCheck, OnDestroy {
       add('Format', 'Minify', () => this.minifyJson(p), true);
       add('Format', 'Sort keys A → Z', () => this.sortKeys(p), true);
       add('Format', 'Unwrap embedded JSON strings', () => this.unwrapAllIn(p), true);
-      add('Convert', 'Copy as YAML', () => this.copyConverted(p, 'YAML', toYaml), true);
+      add(
+        'Convert',
+        'Copy as YAML',
+        () => this.copyConverted(p, 'YAML', async (v) => (await this.converters()).toYaml(v)),
+        true,
+      );
       add(
         'Convert',
         'Copy as TypeScript types',
-        () => this.copyConverted(p, 'TypeScript types', (v) => toTypeScript(v)),
+        () =>
+          this.copyConverted(p, 'TypeScript types', async (v) =>
+            (await this.converters()).toTypeScript(v),
+          ),
         true,
       );
       add('Copy', 'Copy with sensitive values hidden', () => this.copyRedacted(p), true);
@@ -1430,20 +1472,25 @@ export class App implements DoCheck, OnDestroy {
       add(
         'Convert',
         'Copy as C# classes',
-        () => this.copyConverted(p, 'C# classes', (v) => toCSharp(v)),
+        () =>
+          this.copyConverted(p, 'C# classes', async (v) => (await this.converters()).toCSharp(v)),
         true,
       );
       if (Array.isArray(p.parsedJson))
         add(
           'Convert',
           'Copy as JSON Lines',
-          () => this.copyConverted(p, 'JSON Lines', (v) => toJsonLines(v)),
+          () => this.copyConverted(p, 'JSON Lines', async (v) => toJsonLines(v)),
           true,
         );
       add(
         'Convert',
         'Copy as JSON Schema',
-        () => this.copyConverted(p, 'JSON Schema', (v) => JSON.stringify(toJsonSchema(v), null, 2)),
+        () =>
+          this.copyConverted(p, 'JSON Schema', async (v) => {
+            const { toJsonSchema } = await import('./utils/json-schema');
+            return JSON.stringify(toJsonSchema(v), null, 2);
+          }),
         true,
       );
     }
@@ -1499,10 +1546,25 @@ export class App implements DoCheck, OnDestroy {
     return cmds;
   }
 
-  private copyConverted(panel: PanelState, label: string, convert: (value: any) => string): void {
+  private converters() {
+    return import('./utils/json-convert');
+  }
+
+  private async copyConverted(
+    panel: PanelState,
+    label: string,
+    convert: (value: any) => Promise<string>,
+  ): Promise<void> {
     this.ensureParsed(panel);
+    let text: string;
+    try {
+      text = await convert(panel.parsedJson);
+    } catch {
+      this.snackBar.open(`Could not convert to ${label}`, '', { duration: 2500 });
+      return;
+    }
     navigator.clipboard
-      .writeText(convert(panel.parsedJson))
+      .writeText(text)
       .then(() => this.snackBar.open(`Copied as ${label}`, '', { duration: 1800 }))
       .catch(() =>
         this.snackBar.open('Copy failed — clipboard access denied', '', { duration: 2500 }),
