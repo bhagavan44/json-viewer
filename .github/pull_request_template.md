@@ -25,6 +25,7 @@ Closes #
 - [ ] The pull request title follows [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:` …)
 - [ ] Unit tests pass (`npx ng test --watch=false`), with a new or updated spec for every util change
 - [ ] The production build succeeds (`npm run build`)
+- [ ] `npm run lint` passes
 - [ ] `npm run lint:styles` passes (if a stylesheet changed)
 - [ ] `npm run e2e` passes (if UI behaviour changed)
 - [ ] The README is updated (if a feature, shortcut or limit changed)

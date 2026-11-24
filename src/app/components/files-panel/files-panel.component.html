@@ -26,12 +26,14 @@
       <span>{{ query ? 'No files match' : 'No saved files yet' }}</span>
       <small *ngIf="!query">Paste JSON and press Save to keep it here</small>
     </div>
+    <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -- keyboard users open a file with the L / R buttons -->
     <div *ngFor="let file of files"
          class="file-item"
          [class.active]="file.id === leftFileId || file.id === rightFileId"
          (click)="fileOpen.emit(file)">
       <div class="file-item-main">
         <ng-container *ngIf="renamingId === file.id; else nameDisplay">
+          <!-- eslint-disable @angular-eslint/template/no-autofocus -- the rename field should take focus as soon as it appears -->
           <input
             class="rename-input"
             [ngModel]="renameValue"
@@ -41,6 +43,7 @@
             (blur)="renameConfirm.emit(file.id)"
             (click)="$event.stopPropagation()"
             autofocus>
+          <!-- eslint-enable @angular-eslint/template/no-autofocus -->
         </ng-container>
         <ng-template #nameDisplay>
           <mat-icon class="file-icon">insert_drive_file</mat-icon>
@@ -53,6 +56,7 @@
         <span class="file-date">{{ formatDate(file.savedAt) }}</span>
         <span class="file-size">{{ fileSize(file) }}</span>
       </div>
+      <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -- only stops the click reaching the row; the buttons inside are focusable -->
       <div class="file-item-actions" (click)="$event.stopPropagation()">
         <button type="button" class="act-btn pane-open" (click)="fileOpenIn.emit({ file, side: 'left' })" matTooltip="Open in left pane" aria-label="Open in left pane">L</button>
         <button type="button" class="act-btn pane-open" (click)="fileOpenIn.emit({ file, side: 'right' })" matTooltip="Open in right pane" aria-label="Open in right pane">R</button>

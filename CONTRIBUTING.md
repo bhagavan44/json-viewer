@@ -33,6 +33,7 @@ npm start                         # http://localhost:4200
 | `npm run build` | Production build in `dist/json-viewer/browser` |
 | `npm test` | Unit tests (Vitest) in watch mode |
 | `npx ng test --watch=false` | Unit tests once, as CI runs them |
+| `npm run lint` | ESLint (angular-eslint) over the TypeScript and templates |
 | `npm run lint:styles` | Stylelint over `src/**/*.scss` |
 | `npm run e2e` | End-to-end tests (Playwright). Run `npx playwright install chromium` once first |
 
@@ -52,6 +53,7 @@ The [README](README.md) explains the features, the source layout and the main go
    ```bash
    npx ng test --watch=false
    npm run build
+   npm run lint
    npm run lint:styles   # if you changed a stylesheet
    npm run e2e           # if you changed UI behaviour
    ```

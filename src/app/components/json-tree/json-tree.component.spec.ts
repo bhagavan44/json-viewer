@@ -10,7 +10,7 @@ const DOC = { id: 1, user: { name: 'Priya', tags: ['a', 'b'] }, items: [{ qty: 1
 describe('JsonTreeComponent', () => {
   // jsdom has no layout or scrolling; the CDK viewport calls scrollTo when the selection moves.
   beforeAll(() => {
-    (Element.prototype as any).scrollTo ??= () => {};
+    (Element.prototype as any).scrollTo ??= () => undefined;
   });
 
   function create(inputs: Record<string, unknown> = {}) {

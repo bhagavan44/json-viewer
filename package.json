@@ -7,6 +7,7 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
+    "lint": "ng lint",
     "lint:styles": "stylelint \"src/**/*.scss\"",
     "e2e": "playwright test"
   },
@@ -31,14 +32,18 @@
     "@angular/build": "^22.2.7",
     "@angular/cli": "^22.2.7",
     "@angular/compiler-cli": "^22.2.6",
+    "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.65.1",
     "@types/node": "^26.6.6",
+    "angular-eslint": "^22.8.0",
+    "eslint": "^10.15.0",
     "fake-indexeddb": "^6.2.8",
     "jsdom": "^31.0.1",
     "prettier": "^3.10.1",
     "stylelint": "^18.0.0",
     "stylelint-config-standard-scss": "^18.0.0",
     "typescript": "~6.0.3",
+    "typescript-eslint": "^8.74.0",
     "vitest": "^5.1.0"
   }
 }

@@ -2,6 +2,7 @@
   <span class="bracket">{{ closeBracket }}</span>
 </div>
 
+<!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -- keyboard access is handled by the tree (arrow keys, Enter) -->
 <div *ngIf="!closing"
   class="node-row"
   [class.leaf]="!isContainer"
