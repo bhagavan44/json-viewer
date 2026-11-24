@@ -302,6 +302,21 @@ describe('App', () => {
       expect(labels).toContain('Copy as C# classes');
       expect(labels).toContain('Copy as JSON Lines');
     });
+
+    it('copies the converted text, loading the converter on demand', async () => {
+      const copied: string[] = [];
+      Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async (t: string) => void copied.push(t) } });
+      const app = await create();
+      app.onTextChange('{"a":1}', app.left);
+      app.openPalette();
+      for (const label of ['Copy as YAML', 'Copy as TypeScript types', 'Copy as JSON Schema']) {
+        app.paletteCommands.find(c => c.label === label)!.run();
+      }
+      await vi.waitFor(() => expect(copied).toHaveLength(3));
+      expect(copied[0]).toContain('a: 1');
+      expect(copied[1]).toContain('a: number');
+      expect(JSON.parse(copied[2]).properties.a.type).toBe('integer');
+    });
   });
 
   describe('keyboard shortcuts', () => {
@@ -397,6 +412,8 @@ describe('App', () => {
       expect(app.canValidate(app.right)).toBe(false);
 
       app.startValidation('left');
+      expect(app.validation).toMatchObject({ docSide: 'left', pending: true }); // the validator loads on first use
+      await vi.waitFor(() => expect(app.validation!.result).toBeDefined());
       const v = app.validation!;
       expect(v.result!.errors.map(e => e.path)).toEqual(['$', '$.qty']);
       expect(app.validation).toBe(v); // memoized
@@ -404,7 +421,7 @@ describe('App', () => {
       expect(app.treeMarks(app.right)).toBeNull();
 
       app.onTextChange('{"id":1,"qty":2}', app.left);
-      expect(app.validation!.result!.errors).toEqual([]);
+      await vi.waitFor(() => expect(app.validation!.result!.errors).toEqual([]));
     });
 
     it('explains when a pane is missing or the schema cannot be used', async () => {
@@ -413,7 +430,9 @@ describe('App', () => {
       app.startValidation('left');
       expect(app.validation!.problem).toBe('Load a JSON Schema in the right pane.');
       app.onTextChange('{"$ref":"#/nowhere"}', app.right);
-      expect(app.validation!.problem).toMatch(/^The schema cannot be used: Reference/);
+      await vi.waitFor(() =>
+        expect(app.validation!.problem).toMatch(/^The schema cannot be used: Reference/),
+      );
     });
 
     it('reveals an error in the validated pane', async () => {
@@ -422,6 +441,7 @@ describe('App', () => {
       app.onTextChange(SCHEMA, app.right);
       app.left.mode = 'tree';
       app.startValidation('left');
+      await vi.waitFor(() => expect(app.validation!.result).toBeDefined());
       app.revealSchemaError(app.validation!.result!.errors[1]);
       expect(app.left.treeReveal).toEqual({ path: '$.qty' });
     });
@@ -606,7 +626,7 @@ describe('App', () => {
     it('hides sensitive values in the pane', async () => {
       const app = await create();
       app.onTextChange(DOC, app.left);
-      app.redactPane(app.left);
+      await app.redactPane(app.left);
       expect(app.left.parsedJson).toEqual({ user: 'priya', password: '***', email: 'p***@example.com' });
     });
 
@@ -615,7 +635,7 @@ describe('App', () => {
       Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async (t: string) => void copied.push(t) } });
       const app = await create();
       app.onTextChange(DOC, app.left);
-      app.copyRedacted(app.left);
+      await app.copyRedacted(app.left);
       await vi.waitFor(() => expect(copied).toHaveLength(1));
       expect(JSON.parse(copied[0]).password).toBe('***');
       expect(app.left.parsedJson.password).toBe('hunter2'); // the pane is unchanged

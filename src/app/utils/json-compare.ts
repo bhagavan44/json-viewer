@@ -1,7 +1,6 @@
 import { DiffResult, diffJson } from './json-diff';
 import { valueAtPath } from './json-locate';
 import { JsonPathError, looksLikeJsonPath, queryJsonPath } from './json-path';
-import { SchemaLoadError, ValidationResult, validateSchema } from './json-schema-validate';
 
 /** Tree paths to leave out of a comparison, per side. */
 export interface IgnoredPaths {
@@ -19,12 +18,6 @@ export interface CompareOutcome {
   result: DiffResult;
   /** Why `ignoreText` could not be used, if it could not (nothing is ignored then). */
   ignoreError: string | null;
-}
-
-export interface ValidateOutcome {
-  result?: ValidationResult;
-  /** Why the schema cannot be used, when it cannot. */
-  schemaError?: string;
 }
 
 /** Splits comma-separated JSONPath expressions, ignoring commas inside brackets, parentheses and quotes. */
@@ -95,15 +88,6 @@ export function compareDocuments(a: unknown, b: unknown, options: CompareOptions
     result: diffJson(a, b, { matchArrays: options.matchArrays, ignore }),
     ignoreError: error,
   };
-}
-
-/** Validates a parsed document against a parsed schema, reporting a schema that cannot be used. */
-export function validateDocument(doc: unknown, schema: unknown): ValidateOutcome {
-  try {
-    return { result: validateSchema(doc, schema) };
-  } catch (e) {
-    return { schemaError: e instanceof SchemaLoadError ? e.message : 'unexpected error' };
-  }
 }
 
 /**

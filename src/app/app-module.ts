@@ -10,7 +10,6 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatDividerModule } from '@angular/material/divider';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatBadgeModule } from '@angular/material/badge';
 import { ScrollingModule } from '@angular/cdk/scrolling';
@@ -47,7 +46,6 @@ import { CompareBarComponent } from './components/compare-bar/compare-bar.compon
     MatIconModule,
     MatTooltipModule,
     MatSnackBarModule,
-    MatDividerModule,
     MatMenuModule,
     MatBadgeModule,
     ScrollingModule,

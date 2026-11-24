@@ -42,3 +42,13 @@ export function summarizeValue(value: any, max = 36): string {
 export function escapeHtml(text: string): string {
   return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
+
+/** True when a document looks like a JSON Schema (to suggest validating against it). */
+export function looksLikeSchema(value: unknown): boolean {
+  if (jsonTypeOf(value) !== 'object') return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v['$schema'] === 'string' ||
+    (v['type'] === 'object' && jsonTypeOf(v['properties']) === 'object')
+  );
+}

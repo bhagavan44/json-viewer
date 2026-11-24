@@ -3,7 +3,6 @@ import {
   ignoreTextError,
   resolveIgnoredPaths,
   splitJsonPaths,
-  validateDocument,
   withDiffValues,
   withoutDiffValues,
 } from './json-compare';
@@ -59,13 +58,6 @@ describe('compareDocuments', () => {
     const bad = compareDocuments(a, b, { matchArrays: true, ignoreText: 'at' });
     expect(bad.result.changed).toBe(1);
     expect(bad.ignoreError).toMatch(/not a JSONPath/);
-  });
-});
-
-describe('validateDocument', () => {
-  it('returns the result, or why the schema cannot be used', () => {
-    expect(validateDocument(1, { type: 'string' }).result!.errors).toHaveLength(1);
-    expect(validateDocument(1, { $ref: '#/nope' }).schemaError).toMatch(/^Reference/);
   });
 });
 
