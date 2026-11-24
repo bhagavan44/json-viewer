@@ -309,10 +309,11 @@ describe('App', () => {
       const app = await create();
       app.onTextChange('{"a":1}', app.left);
       app.openPalette();
-      for (const label of ['Copy as YAML', 'Copy as TypeScript types', 'Copy as JSON Schema']) {
+      // One at a time: each converter is a separate lazy chunk, so concurrent copies can finish in any order.
+      for (const [i, label] of ['Copy as YAML', 'Copy as TypeScript types', 'Copy as JSON Schema'].entries()) {
         app.paletteCommands.find(c => c.label === label)!.run();
+        await vi.waitFor(() => expect(copied).toHaveLength(i + 1));
       }
-      await vi.waitFor(() => expect(copied).toHaveLength(3));
       expect(copied[0]).toContain('a: 1');
       expect(copied[1]).toContain('a: number');
       expect(JSON.parse(copied[2]).properties.a.type).toBe('integer');
