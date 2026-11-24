@@ -27,7 +27,7 @@
   border-bottom: 1px solid var(--panel-border);
   background: none;
   color: inherit;
-  font: 15px 'Roboto', sans-serif;
+  font: 15px var(--font-sans);
   outline: none;
 
   &::placeholder {
@@ -50,7 +50,7 @@
     border-radius: 7px;
     background: none;
     color: inherit;
-    font: 13.5px 'Roboto', sans-serif;
+    font: 13.5px var(--font-sans);
     text-align: left;
     cursor: pointer;
 
