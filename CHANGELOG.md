@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.5.0](https://github.com/bhagavan44/json-viewer/compare/v0.4.1...v0.5.0) (2026-11-24)
+
+
+### Features
+
+* add a report-only Content-Security-Policy header ([#86](https://github.com/bhagavan44/json-viewer/issues/86)) ([a19e295](https://github.com/bhagavan44/json-viewer/commit/a19e295fe94cd0685f94508e43fec0c631fd8329))
+* enforce the Content-Security-Policy header ([#88](https://github.com/bhagavan44/json-viewer/issues/88)) ([2cd267d](https://github.com/bhagavan44/json-viewer/commit/2cd267d527ee3a3056daa32db8cb93e00bd5edc1))
+* offline support and installable PWA ([#87](https://github.com/bhagavan44/json-viewer/issues/87)) ([0d6dab9](https://github.com/bhagavan44/json-viewer/commit/0d6dab98d2fbdb6ae8b87ee718dc0f1bcff6aee6))
+
+
+### Performance
+
+* lazy-load rarely used features ([#83](https://github.com/bhagavan44/json-viewer/issues/83)) ([2c4422b](https://github.com/bhagavan44/json-viewer/commit/2c4422b251b71f61a085d435e20140413de5012a))
+* self-host Inter and a subset of Material Icons ([#84](https://github.com/bhagavan44/json-viewer/issues/84)) ([230b832](https://github.com/bhagavan44/json-viewer/commit/230b832c239ce4c8cff163ebcea760c00f59c3bf))
+
 ## [0.4.1](https://github.com/bhagavan44/json-viewer/compare/v0.4.0...v0.4.1) (2026-11-23)
 
 
