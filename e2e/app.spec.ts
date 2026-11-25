@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { leftPanel, openShared, rightPanel } from './helpers';
+import { leftPanel, openShared, rightPanel, storedSession } from './helpers';
 
 test('loads the workspace and the Monaco editor', async ({ page }) => {
   await page.goto('/');
@@ -91,22 +91,7 @@ test('restores the session from IndexedDB after a reload', async ({ page }) => {
   await openShared(page, '{"draft":"kept after reload"}', '[1,2,3]');
   // Autosave runs 500 ms after a change; wait until the session is in IndexedDB.
   await expect
-    .poll(() =>
-      page.evaluate(
-        () =>
-          new Promise<string | null>((resolve) => {
-            const open = indexedDB.open('json-viewer');
-            open.onerror = () => resolve(null);
-            open.onsuccess = () => {
-              const db = open.result;
-              if (!db.objectStoreNames.contains('session')) return (resolve(null), db.close());
-              const get = db.transaction('session').objectStore('session').get('current');
-              get.onsuccess = () => (resolve(get.result?.left?.text ?? null), db.close());
-              get.onerror = () => (resolve(null), db.close());
-            };
-          }),
-      ),
-    )
+    .poll(async () => (await storedSession(page))?.left?.text)
     .toContain('kept after reload');
   expect(await page.evaluate(() => localStorage.getItem('json-viewer-session'))).toBeNull();
 
