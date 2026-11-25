@@ -44,10 +44,11 @@ import { EditError, addChild, deleteAt, renameKey, setValue } from './utils/json
 import { TreeEdit } from './components/json-tree/json-tree.component';
 import { ShareLinkError } from './utils/share-link';
 import { PaletteCommand } from './components/command-palette/command-palette.component';
-import { FileStore, LocalStorageFileStore, SavedFile, createFileStore } from './utils/file-store';
+import { SavedFile } from './utils/file-store';
 import { PANEL_MODES, PanelMode, RestoredSession, SessionState } from './utils/session';
 import { SessionService } from './services/session.service';
 import { ShareService } from './services/share.service';
+import { FilesService } from './services/files.service';
 
 export type { SavedFile } from './utils/file-store';
 export type { PanelMode } from './utils/session';
@@ -131,7 +132,7 @@ export const WORKER_MIN_CHARS = LARGE_TEXT_CHARS;
   templateUrl: './app.html',
   styleUrl: './app.scss',
   // One per app, so its timers and listeners go away with it.
-  providers: [SessionService, ShareService],
+  providers: [SessionService, ShareService, FilesService],
 })
 export class App implements DoCheck, OnDestroy {
   @ViewChild('leftPanel', { static: false }) leftPanelRef!: ElementRef<HTMLElement>;
@@ -170,7 +171,13 @@ export class App implements DoCheck, OnDestroy {
   splitPercent = 50;
 
   // ── Local Storage ─────────────────────────────────────────────────────────
-  savedFiles: SavedFile[] = [];
+  /** Most recently saved first. */
+  get savedFiles(): SavedFile[] {
+    return this.files.list;
+  }
+  set savedFiles(files: SavedFile[]) {
+    this.files.list = files;
+  }
   showFilesPanel = typeof window !== 'undefined' && window.innerWidth >= NARROW_BREAKPOINT;
   showSaveDialog = false;
   saveFileName = '';
@@ -185,6 +192,7 @@ export class App implements DoCheck, OnDestroy {
     private cdr: ChangeDetectorRef,
     private session: SessionService,
     private share: ShareService,
+    private files: FilesService,
     @Optional() private swUpdate: SwUpdate | null,
   ) {
     this.activePanel = this.left;
@@ -196,12 +204,10 @@ export class App implements DoCheck, OnDestroy {
 
   /** Resolves once saved files are loaded and the previous session is restored. */
   readonly ready: Promise<void>;
-  private store: FileStore = createFileStore();
-  private unwatchFiles?: () => void;
 
   private async init(): Promise<void> {
-    this.savedFiles = await this.loadFiles();
-    const restored = await this.session.restore(this.store, this.savedFiles);
+    await this.files.load();
+    const restored = await this.session.restore(this.files.store, this.savedFiles);
     if (restored) {
       this.applySession(restored);
     } else {
@@ -212,8 +218,9 @@ export class App implements DoCheck, OnDestroy {
     }
     // A share link in the address bar wins over the restored session.
     await this.openSharedHash(location.hash);
-    this.session.start(this.store, () => this.sessionState());
-    this.unwatchFiles = this.store.watch(() => void this.reloadFiles());
+    this.session.start(this.files.store, () => this.sessionState());
+    // Another tab saved, renamed or deleted a file.
+    this.files.watch(() => this.cdr.markForCheck());
     this.cdr.markForCheck();
     this.preloadRareFeatures();
   }
@@ -237,26 +244,6 @@ export class App implements DoCheck, OnDestroy {
     });
   }
 
-  private async loadFiles(): Promise<SavedFile[]> {
-    try {
-      return await this.store.load();
-    } catch {
-      // IndexedDB can be blocked (e.g. some private modes): fall back to localStorage.
-      this.store = new LocalStorageFileStore();
-      return this.store.load().catch(() => []);
-    }
-  }
-
-  /** Another tab saved, renamed or deleted a file. */
-  private async reloadFiles(): Promise<void> {
-    try {
-      this.savedFiles = await this.store.load();
-      this.cdr.markForCheck();
-    } catch {
-      /* keep the current list */
-    }
-  }
-
   private updateSub?: Subscription;
 
   /** Offers a reload once the service worker has downloaded a new version of the app. */
@@ -273,7 +260,6 @@ export class App implements DoCheck, OnDestroy {
 
   ngOnDestroy(): void {
     this.updateSub?.unsubscribe();
-    this.unwatchFiles?.();
     for (const timer of this.parseTimers.values()) clearTimeout(timer);
     this.parseTimers.clear();
     this.worker?.dispose();
@@ -1325,7 +1311,7 @@ export class App implements DoCheck, OnDestroy {
   /** Ctrl/Cmd+S: saves a pane that already has a saved file in place; otherwise asks for a name. */
   async quickSave(panel: PanelState): Promise<void> {
     if (!panel.jsonText.trim()) return;
-    const file = this.savedFiles.find((f) => f.id === panel.currentFileId);
+    const file = this.files.find(panel.currentFileId);
     if (!file) return this.openSaveDialog(panel);
     this.savingPanel = panel;
     this.saveFileName = file.name;
@@ -1505,10 +1491,9 @@ export class App implements DoCheck, OnDestroy {
     return window.innerWidth < NARROW_BREAKPOINT;
   }
 
-  // The footer and file list are read on every render; these memos keep a large
-  // document from being re-encoded or re-scanned each time.
+  // The footer is read on every render; this memo keeps a large document from being
+  // re-encoded or re-scanned each time.
   private textStats = new Map<PanelState, { text: string; bytes: number; lines: number }>();
-  private fileFilter: { files: SavedFile[]; query: string; result: SavedFile[] } | null = null;
 
   private stats(panel: PanelState): { bytes: number; lines: number } {
     let s = this.textStats.get(panel);
@@ -1533,29 +1518,17 @@ export class App implements DoCheck, OnDestroy {
   /** True when the pane holds text that is not saved (or differs from its saved file). */
   isDirty(panel: PanelState): boolean {
     if (!panel.jsonText.trim()) return false;
-    const file = this.savedFiles.find((f) => f.id === panel.currentFileId);
+    const file = this.files.find(panel.currentFileId);
     return !file || file.content !== panel.jsonText;
   }
 
   panelFileName(panel: PanelState): string | null {
-    const saved = panel.currentFileId
-      ? this.savedFiles.find((f) => f.id === panel.currentFileId)
-      : undefined;
-    return saved?.name ?? panel.sourceName;
+    return this.files.find(panel.currentFileId)?.name ?? panel.sourceName;
   }
 
   // ── Local Storage ─────────────────────────────────────────────────────────
-  /** Memoized: the list is replaced (never mutated) whenever files change. */
   get filteredFiles(): SavedFile[] {
-    const query = this.fileSearchQuery.trim().toLowerCase();
-    if (!query) return this.savedFiles;
-    const memo = this.fileFilter;
-    if (memo && memo.files === this.savedFiles && memo.query === query) return memo.result;
-    const result = this.savedFiles.filter(
-      (f) => f.name.toLowerCase().includes(query) || f.content.toLowerCase().includes(query),
-    );
-    this.fileFilter = { files: this.savedFiles, query, result };
-    return result;
+    return this.files.filter(this.fileSearchQuery);
   }
 
   generateRandomName(): string {
@@ -1613,7 +1586,7 @@ export class App implements DoCheck, OnDestroy {
     this.savingPanel = panel;
     this.activePanel = panel;
     if (panel.currentFileId) {
-      const current = this.savedFiles.find((f) => f.id === panel.currentFileId);
+      const current = this.files.find(panel.currentFileId);
       this.saveFileName = current?.name ?? this.generateRandomName();
     } else if (panel.sourceName) {
       this.saveFileName = panel.sourceName.replace(/\.(json|txt)$/i, '');
@@ -1628,19 +1601,12 @@ export class App implements DoCheck, OnDestroy {
     const panel = this.savingPanel;
     if (!panel || !panel.jsonText.trim()) return;
     const name = this.saveFileName.trim() || this.generateRandomName();
-    const existing = panel.currentFileId
-      ? this.savedFiles.find((f) => f.id === panel.currentFileId)
-      : undefined;
-    const file: SavedFile = {
-      id: existing?.id ?? Date.now().toString(36) + Math.random().toString(36).slice(2),
-      name,
-      content: panel.jsonText,
-      savedAt: Date.now(),
-    };
+    const existing = this.files.find(panel.currentFileId);
     this.showSaveDialog = false;
     this.savingPanel = null;
+    let file: SavedFile;
     try {
-      await this.store.put(file);
+      file = await this.files.save(name, panel.jsonText, existing?.id);
     } catch {
       this.snackBar.open(
         `Could not save "${name}": browser storage is full or unavailable`,
@@ -1650,7 +1616,6 @@ export class App implements DoCheck, OnDestroy {
       this.cdr.markForCheck();
       return;
     }
-    this.savedFiles = [file, ...this.savedFiles.filter((f) => f.id !== file.id)];
     panel.currentFileId = file.id;
     this.snackBar.open(existing ? `Saved "${name}"` : `Saved as "${name}"`, '', { duration: 2000 });
     this.cdr.markForCheck();
@@ -1695,17 +1660,16 @@ export class App implements DoCheck, OnDestroy {
 
   async deleteFile(id: string, event?: MouseEvent): Promise<void> {
     event?.stopPropagation();
-    const file = this.savedFiles.find((f) => f.id === id);
+    const file = this.files.find(id);
     if (!file) return;
     try {
-      await this.store.delete(id);
+      await this.files.delete(id);
     } catch {
       this.snackBar.open(`Could not delete "${file.name}"`, 'Dismiss', { duration: 4000 });
       return;
     }
     const panes = [this.left, this.right].filter((p) => p.currentFileId === id);
     panes.forEach((p) => (p.currentFileId = null));
-    this.savedFiles = this.savedFiles.filter((f) => f.id !== id);
     this.cdr.markForCheck();
     this.snackBar
       .open(`Deleted "${file.name}"`, 'Undo', { duration: 6000 })
@@ -1716,14 +1680,11 @@ export class App implements DoCheck, OnDestroy {
   /** Undo for a delete: stores the file again and re-links the panes that showed it. */
   async restoreFile(file: SavedFile, panes: PanelState[]): Promise<void> {
     try {
-      await this.store.put(file);
+      await this.files.restore(file);
     } catch {
       this.snackBar.open(`Could not restore "${file.name}"`, 'Dismiss', { duration: 4000 });
       return;
     }
-    this.savedFiles = [...this.savedFiles.filter((f) => f.id !== file.id), file].sort(
-      (a, b) => b.savedAt - a.savedAt,
-    );
     panes.filter((p) => p.currentFileId === null).forEach((p) => (p.currentFileId = file.id));
     this.cdr.markForCheck();
   }
@@ -1736,17 +1697,15 @@ export class App implements DoCheck, OnDestroy {
 
   async confirmRename(id: string): Promise<void> {
     const name = this.renameValue.trim();
-    const file = this.savedFiles.find((f) => f.id === id);
+    const file = this.files.find(id);
     this.renamingFileId = null;
     if (!name || !file || file.name === name) return;
-    const renamed = { ...file, name };
     try {
-      await this.store.put(renamed);
+      await this.files.rename(file, name);
     } catch {
       this.snackBar.open(`Could not rename "${file.name}"`, 'Dismiss', { duration: 4000 });
       return;
     }
-    this.savedFiles = this.savedFiles.map((f) => (f.id === id ? renamed : f));
     this.cdr.markForCheck();
   }
 
