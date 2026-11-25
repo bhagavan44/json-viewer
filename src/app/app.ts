@@ -12,15 +12,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { SwUpdate } from '@angular/service-worker';
 import { Subscription } from 'rxjs';
 import { DiffEntry, DiffKind, DiffResult } from './utils/json-diff';
-import type { SchemaError, ValidateOutcome, ValidationResult } from './utils/json-schema-validate';
-import {
-  CompareOutcome,
-  compareDocuments,
-  ignoreTextError,
-  resolveIgnoredPaths,
-  withDiffValues,
-} from './utils/json-compare';
-import { JsonWorkerClient } from './utils/json-worker-client';
+import type { SchemaError } from './utils/json-schema-validate';
 import { parseJson, stringifyJson } from './utils/json-parse';
 import {
   byteLength,
@@ -49,20 +41,12 @@ import { PANEL_MODES, PanelMode, RestoredSession, SessionState } from './utils/s
 import { SessionService } from './services/session.service';
 import { ShareService } from './services/share.service';
 import { FilesService } from './services/files.service';
+import { CompareService, ValidationView } from './services/compare.service';
 
 export type { SavedFile } from './utils/file-store';
 export type { PanelMode } from './utils/session';
-
-/** What the schema validation panel shows. */
-export interface ValidationView {
-  docSide: 'left' | 'right';
-  schemaSide: 'left' | 'right';
-  result?: ValidationResult;
-  /** Why there is no result (a pane is empty or invalid, or the schema cannot be used). */
-  problem?: string;
-  /** The worker is still validating a large document. */
-  pending?: boolean;
-}
+export type { ValidationView } from './services/compare.service';
+export { WORKER_MIN_CHARS } from './services/compare.service';
 
 /** The path of the container holding `path` (`$` for top-level members). */
 function parentPath(path: string): string {
@@ -123,8 +107,6 @@ const MAX_OPEN_BYTES = 25 * 1024 * 1024;
 export const LARGE_TEXT_CHARS = 200_000;
 /** How long typing must pause before a large document is parsed again. */
 export const PARSE_DEBOUNCE_MS = 250;
-/** Above this combined size, Compare and schema validation run in a Web Worker. */
-export const WORKER_MIN_CHARS = LARGE_TEXT_CHARS;
 
 @Component({
   selector: 'app-root',
@@ -132,7 +114,7 @@ export const WORKER_MIN_CHARS = LARGE_TEXT_CHARS;
   templateUrl: './app.html',
   styleUrl: './app.scss',
   // One per app, so its timers and listeners go away with it.
-  providers: [SessionService, ShareService, FilesService],
+  providers: [SessionService, ShareService, FilesService, CompareService],
 })
 export class App implements DoCheck, OnDestroy {
   @ViewChild('leftPanel', { static: false }) leftPanelRef!: ElementRef<HTMLElement>;
@@ -148,16 +130,13 @@ export class App implements DoCheck, OnDestroy {
   /** JSONPath expressions (comma-separated) whose values Compare leaves out, e.g. `$..updatedAt`. */
   ignoreText = '';
   /** Why `ignoreText` could not be used, if it could not. */
-  ignoreError: string | null = null;
-  private diffCache: {
-    left: unknown;
-    right: unknown;
-    matchArrays: boolean;
-    ignoreText: string;
-    result: DiffResult | null;
-  } = { left: undefined, right: undefined, matchArrays: true, ignoreText: '', result: null };
+  get ignoreError(): string | null {
+    return this.compare.ignoreError;
+  }
   /** The worker is still comparing the current documents. */
-  diffPending = false;
+  get diffPending(): boolean {
+    return this.compare.diffPending;
+  }
 
   left: PanelState = newPanel();
   right: PanelState = newPanel();
@@ -193,12 +172,14 @@ export class App implements DoCheck, OnDestroy {
     private session: SessionService,
     private share: ShareService,
     private files: FilesService,
+    private compare: CompareService,
     @Optional() private swUpdate: SwUpdate | null,
   ) {
     this.activePanel = this.left;
     this.loadPersistedTheme();
     this.watchForUpdates();
     this.share.watch((hash) => void this.openSharedHash(hash));
+    this.compare.onResult(() => this.cdr.markForCheck());
     this.ready = this.init();
   }
 
@@ -262,7 +243,6 @@ export class App implements DoCheck, OnDestroy {
     this.updateSub?.unsubscribe();
     for (const timer of this.parseTimers.values()) clearTimeout(timer);
     this.parseTimers.clear();
-    this.worker?.dispose();
   }
 
   private assignFile(file: SavedFile, panel: PanelState): void {
@@ -277,15 +257,6 @@ export class App implements DoCheck, OnDestroy {
 
   /** Parses scheduled while typing in a large document, per pane. */
   private parseTimers = new Map<PanelState, ReturnType<typeof setTimeout>>();
-  /** The text each parsed document came from, so the worker can be sent text instead of objects. */
-  private parsedFrom = new WeakMap<object, string>();
-  /** Runs Compare and schema validation of large documents off the main thread (none in tests). */
-  private worker =
-    typeof Worker === 'undefined'
-      ? null
-      : new JsonWorkerClient(
-          () => new Worker(new URL('./json.worker', import.meta.url), { type: 'module' }),
-        );
 
   onTextChange(text: string, panel: PanelState): void {
     panel.jsonText = text;
@@ -325,8 +296,7 @@ export class App implements DoCheck, OnDestroy {
       panel.parsedJson = parseJson(text);
       panel.jsonError = null;
       panel.isValid = true;
-      if (typeof panel.parsedJson === 'object' && panel.parsedJson !== null)
-        this.parsedFrom.set(panel.parsedJson, text);
+      this.compare.noteSource(panel.parsedJson, text);
     } catch (e: any) {
       panel.parsedJson = null;
       panel.jsonError = e.message;
@@ -723,78 +693,22 @@ export class App implements DoCheck, OnDestroy {
   /** Memoized by document identity, so it is cheap to read from the template. */
   get diff(): DiffResult | null {
     if (!this.compareReady) return null;
-    const a = this.left.parsedJson;
-    const b = this.right.parsedJson;
     const { matchArrays, ignoreText } = this;
-    const c = this.diffCache;
-    if (
-      c.left === a &&
-      c.right === b &&
-      c.matchArrays === matchArrays &&
-      c.ignoreText === ignoreText
-    )
-      return c.result;
-    const key = { left: a, right: b, matchArrays, ignoreText, result: null as DiffResult | null };
-    this.diffCache = key;
-    const texts = this.workerTexts(a, b);
-    if (texts) {
-      // Only the options changed: keep showing the last result until the worker replies.
-      if (c.left === a && c.right === b) key.result = c.result;
-      this.ignoreError = ignoreTextError(ignoreText);
-      this.diffPending = true;
-      void this.diffInWorker(key, texts);
-    } else {
-      this.diffPending = false;
-      this.applyDiff(key, compareDocuments(a, b, { matchArrays, ignoreText }));
-    }
-    return key.result;
-  }
-
-  private applyDiff(key: App['diffCache'], outcome: CompareOutcome): void {
-    key.result = outcome.result;
-    this.ignoreError = outcome.ignoreError;
-  }
-
-  private async diffInWorker(
-    key: App['diffCache'],
-    [left, right]: [string, string],
-  ): Promise<void> {
-    const { matchArrays, ignoreText } = key;
-    let outcome: CompareOutcome;
-    try {
-      const reply = await this.worker!.run({ op: 'diff', left, right, matchArrays, ignoreText });
-      if (!reply) return; // a newer comparison replaced this one
-      outcome = { ...reply, result: withDiffValues(reply.result, key.left, key.right) };
-    } catch {
-      outcome = compareDocuments(key.left, key.right, { matchArrays, ignoreText });
-    }
-    if (this.diffCache !== key) return;
-    this.applyDiff(key, outcome);
-    this.diffPending = false;
-    this.cdr.markForCheck();
-  }
-
-  /** The texts two documents were parsed from, when together they are big enough for the worker. */
-  private workerTexts(a: unknown, b: unknown): [string, string] | null {
-    if (!this.worker?.available) return null;
-    const textOf = (d: unknown) =>
-      typeof d === 'object' && d !== null ? this.parsedFrom.get(d) : undefined;
-    const first = textOf(a);
-    const second = textOf(b);
-    if (first === undefined || second === undefined) return null;
-    return first.length + second.length > WORKER_MIN_CHARS ? [first, second] : null;
+    return this.compare.diff(this.left.parsedJson, this.right.parsedJson, {
+      matchArrays,
+      ignoreText,
+    });
   }
 
   /** Copies an RFC 6902 patch that turns the left document into the right one. */
   async copyPatch(): Promise<void> {
-    const { jsonPatch } = await import('./utils/json-patch');
     this.ensureParsed(this.left, this.right);
     if (!this.compareReady) return;
-    const a = this.left.parsedJson;
-    const b = this.right.parsedJson;
-    const { ignore } = resolveIgnoredPaths(a, b, this.ignoreText);
-    const ignored = new Set([...(ignore?.left ?? []), ...(ignore?.right ?? [])]);
-    const ops = jsonPatch(a, b, ignored);
+    const ops = await this.compare.patch(
+      this.left.parsedJson,
+      this.right.parsedJson,
+      this.ignoreText,
+    );
     navigator.clipboard
       .writeText(stringifyJson(ops, 2))
       .then(() =>
@@ -811,8 +725,6 @@ export class App implements DoCheck, OnDestroy {
 
   // ── Schema validation (one pane holds the document, the other the schema) ──
   validationDoc: 'left' | 'right' | null = null;
-  private validationMemo: { doc: unknown; schema: unknown; view: ValidationView } | null = null;
-  private schemaMarks: { errors: SchemaError[]; marks: Record<string, DiffKind> } | null = null;
 
   startValidation(docSide: 'left' | 'right'): void {
     this.ensureParsed(this.left, this.right);
@@ -839,50 +751,7 @@ export class App implements DoCheck, OnDestroy {
         schemaSide,
         problem: `Load valid JSON in the ${docSide} pane to validate it.`,
       };
-    const memo = this.validationMemo;
-    const doc = docPanel.parsedJson;
-    const schema = schemaPanel.parsedJson;
-    if (memo && memo.doc === doc && memo.schema === schema && memo.view.docSide === docSide)
-      return memo.view;
-    const next = { doc, schema, view: { docSide, schemaSide, pending: true } as ValidationView };
-    this.validationMemo = next;
-    const texts = this.workerTexts(doc, schema);
-    if (texts) void this.validateInWorker(next, texts);
-    else void this.validateHere(next);
-    return next.view;
-  }
-
-  private validationView(docSide: 'left' | 'right', outcome: ValidateOutcome): ValidationView {
-    const schemaSide = docSide === 'left' ? 'right' : 'left';
-    return outcome.result
-      ? { docSide, schemaSide, result: outcome.result }
-      : { docSide, schemaSide, problem: `The schema cannot be used: ${outcome.schemaError}.` };
-  }
-
-  /** Validates on this thread (small documents); the validator loads on first use. */
-  private async validateHere(memo: NonNullable<App['validationMemo']>): Promise<void> {
-    const { validateDocument } = await import('./utils/json-schema-validate');
-    if (this.validationMemo !== memo) return;
-    memo.view = this.validationView(memo.view.docSide, validateDocument(memo.doc, memo.schema));
-    this.cdr.markForCheck();
-  }
-
-  private async validateInWorker(
-    memo: NonNullable<App['validationMemo']>,
-    [doc, schema]: [string, string],
-  ): Promise<void> {
-    let outcome: ValidateOutcome;
-    try {
-      const reply = await this.worker!.run({ op: 'validate', doc, schema });
-      if (!reply) return; // a newer validation replaced this one
-      outcome = reply;
-    } catch {
-      const { validateDocument } = await import('./utils/json-schema-validate');
-      outcome = validateDocument(memo.doc, memo.schema);
-    }
-    if (this.validationMemo !== memo) return;
-    memo.view = this.validationView(memo.view.docSide, outcome);
-    this.cdr.markForCheck();
+    return this.compare.validate(docPanel.parsedJson, schemaPanel.parsedJson, docSide);
   }
 
   /** Offer validation when the other pane holds a schema and this one holds a document. */
@@ -909,12 +778,7 @@ export class App implements DoCheck, OnDestroy {
     }
     const v = this.validation;
     if (!v?.result || (v.docSide === 'left') !== (panel === this.left)) return null;
-    if (this.schemaMarks?.errors !== v.result.errors) {
-      const marks: Record<string, DiffKind> = {};
-      for (const e of v.result.errors) marks[e.path] = 'del';
-      this.schemaMarks = { errors: v.result.errors, marks };
-    }
-    return this.schemaMarks.marks;
+    return this.compare.errorMarks(v.result.errors);
   }
 
   private schemaHint = new Map<PanelState, { doc: unknown; isSchema: boolean }>();
