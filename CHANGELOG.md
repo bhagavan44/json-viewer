@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.5.1](https://github.com/bhagavan44/json-viewer/compare/v0.5.0...v0.5.1) (2026-11-25)
+
+
+### Refactoring
+
+* move compare and schema validation into CompareService ([#97](https://github.com/bhagavan44/json-viewer/issues/97)) ([ad0ea19](https://github.com/bhagavan44/json-viewer/commit/ad0ea19c705f2018f0818da9da219e91b87fc5ae))
+* move saved files into FilesService ([#96](https://github.com/bhagavan44/json-viewer/issues/96)) ([1d1dca0](https://github.com/bhagavan44/json-viewer/commit/1d1dca0e6dbe1f311bc21ca25704578565884031))
+* move session save and restore into SessionService ([#93](https://github.com/bhagavan44/json-viewer/issues/93)) ([75e6293](https://github.com/bhagavan44/json-viewer/commit/75e629342c3150661a4c6c68fafdb1064879d18f))
+* move share links into ShareService ([#95](https://github.com/bhagavan44/json-viewer/issues/95)) ([6b32d7a](https://github.com/bhagavan44/json-viewer/commit/6b32d7a78d1c1f848f5e5e93568324517edf3495))
+
 ## [0.5.0](https://github.com/bhagavan44/json-viewer/compare/v0.4.1...v0.5.0) (2026-11-24)
 
 
