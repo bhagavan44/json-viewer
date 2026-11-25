@@ -42,18 +42,12 @@ import {
 } from './utils/json-locate';
 import { EditError, addChild, deleteAt, renameKey, setValue } from './utils/json-edit';
 import { TreeEdit } from './components/json-tree/json-tree.component';
-import {
-  SHARE_HASH_PREFIX,
-  SHARE_MAX_CHARS,
-  SHARE_WARN_CHARS,
-  ShareLinkError,
-  decodeShare,
-  encodeShare,
-} from './utils/share-link';
+import { ShareLinkError } from './utils/share-link';
 import { PaletteCommand } from './components/command-palette/command-palette.component';
 import { FileStore, LocalStorageFileStore, SavedFile, createFileStore } from './utils/file-store';
 import { PANEL_MODES, PanelMode, RestoredSession, SessionState } from './utils/session';
 import { SessionService } from './services/session.service';
+import { ShareService } from './services/share.service';
 
 export type { SavedFile } from './utils/file-store';
 export type { PanelMode } from './utils/session';
@@ -136,8 +130,8 @@ export const WORKER_MIN_CHARS = LARGE_TEXT_CHARS;
   standalone: false,
   templateUrl: './app.html',
   styleUrl: './app.scss',
-  // One per app, so its timer and store go away with it.
-  providers: [SessionService],
+  // One per app, so its timers and listeners go away with it.
+  providers: [SessionService, ShareService],
 })
 export class App implements DoCheck, OnDestroy {
   @ViewChild('leftPanel', { static: false }) leftPanelRef!: ElementRef<HTMLElement>;
@@ -190,11 +184,13 @@ export class App implements DoCheck, OnDestroy {
     private snackBar: MatSnackBar,
     private cdr: ChangeDetectorRef,
     private session: SessionService,
+    private share: ShareService,
     @Optional() private swUpdate: SwUpdate | null,
   ) {
     this.activePanel = this.left;
     this.loadPersistedTheme();
     this.watchForUpdates();
+    this.share.watch((hash) => void this.openSharedHash(hash));
     this.ready = this.init();
   }
 
@@ -1194,8 +1190,10 @@ export class App implements DoCheck, OnDestroy {
   }
 
   // ── Share links ───────────────────────────────────────────────────────────
-  /** Copies a link that reopens both panes (and the Compare view) for whoever opens it. */
-  /** Copies a link that reopens both panes. With `hideSensitive`, the documents are redacted first. */
+  /**
+   * Copies a link that reopens both panes (and the Compare view) for whoever opens it. With
+   * `hideSensitive`, the documents are redacted first.
+   */
   async shareLink(hideSensitive = false): Promise<void> {
     this.ensureParsed(this.left, this.right);
     let left = this.left.jsonText;
@@ -1225,46 +1223,37 @@ export class App implements DoCheck, OnDestroy {
       });
       [left, right] = texts;
     }
-    try {
-      const payload = await encodeShare({ left, right, view: this.viewMode });
-      if (payload.length > SHARE_MAX_CHARS) {
-        this.snackBar.open(
-          'Too large for a link. Download the files and send those instead.',
-          'Dismiss',
-          { duration: 6000 },
-        );
-        return;
-      }
-      const url = `${location.origin}${location.pathname}${SHARE_HASH_PREFIX}${payload}`;
-      await navigator.clipboard.writeText(url);
+    const outcome = await this.share.copyLink({ left, right, view: this.viewMode });
+    if (outcome.status === 'too-large') {
+      this.snackBar.open(
+        'Too large for a link. Download the files and send those instead.',
+        'Dismiss',
+        { duration: 6000 },
+      );
+      return;
+    }
+    if (outcome.status === 'denied') {
+      this.snackBar.open('Could not copy the link: clipboard access denied', '', {
+        duration: 3000,
+      });
+    } else {
       const what = hideSensitive
         ? hidden
           ? `Link copied, with ${hidden} sensitive value${hidden === 1 ? '' : 's'} hidden`
           : 'Link copied (nothing sensitive found)'
         : 'Link copied';
       this.snackBar.open(
-        payload.length > SHARE_WARN_CHARS
-          ? `${what}. It is long, so some chat apps may cut it off.`
-          : what,
+        outcome.long ? `${what}. It is long, so some chat apps may cut it off.` : what,
         '',
         { duration: 3000 },
       );
-    } catch {
-      this.snackBar.open('Could not copy the link: clipboard access denied', '', {
-        duration: 3000,
-      });
     }
     this.cdr.markForCheck();
   }
 
-  @HostListener('window:hashchange')
-  onHashChange(): void {
-    void this.openSharedHash(location.hash);
-  }
-
   /** Opens the documents in a `#s=` share link. Returns false when the hash is not a share link. */
   async openSharedHash(hash: string): Promise<boolean> {
-    if (!hash.startsWith(SHARE_HASH_PREFIX)) return false;
+    if (!this.share.isShareLink(hash)) return false;
     const before = [this.left, this.right].map((p) => ({
       jsonText: p.jsonText,
       currentFileId: p.currentFileId,
@@ -1273,7 +1262,7 @@ export class App implements DoCheck, OnDestroy {
     const hadWork = before.some((b) => b.jsonText.trim());
     const viewBefore = this.viewMode;
     try {
-      const shared = await decodeShare(hash.slice(SHARE_HASH_PREFIX.length));
+      const shared = await this.share.read(hash);
       for (const [panel, text] of [
         [this.left, shared.left],
         [this.right, shared.right],
@@ -1284,8 +1273,7 @@ export class App implements DoCheck, OnDestroy {
         this.parsePanel(panel);
       }
       this.viewMode = shared.view;
-      // Drop the hash so a reload shows the session instead of re-importing the link.
-      history.replaceState(null, '', location.pathname + location.search);
+      this.share.clearHash();
       const ref = this.snackBar.open('Opened the shared documents', hadWork ? 'Undo' : '', {
         duration: hadWork ? 10000 : 3000,
       });
