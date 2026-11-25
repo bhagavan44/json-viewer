@@ -27,7 +27,7 @@ jobs:
           # HEAD is the PR merge commit and HEAD^1 is the base branch.
           if git diff --quiet HEAD^1 HEAD -- \
             src public e2e angular.json package.json package-lock.json 'tsconfig*.json' \
-            playwright.config.ts stylelint.config.mjs eslint.config.js .github/workflows/ci.yml; then
+            playwright.config.ts stylelint.config.mjs eslint.config.js .prettierrc .github/workflows/ci.yml; then
             echo "code=false" >> "$GITHUB_OUTPUT"
           else
             echo "code=true" >> "$GITHUB_OUTPUT"
@@ -53,6 +53,9 @@ jobs:
 
       - name: Style lint
         run: npm run lint:styles
+
+      - name: Format check
+        run: npm run format:check
 
       - name: Unit tests
         run: npx ng test --watch=false

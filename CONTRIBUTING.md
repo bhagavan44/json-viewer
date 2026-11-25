@@ -35,6 +35,7 @@ npm start                         # http://localhost:4200
 | `npx ng test --watch=false` | Unit tests once, as CI runs them |
 | `npm run lint` | ESLint (angular-eslint) over the TypeScript and templates |
 | `npm run lint:styles` | Stylelint over `src/**/*.scss` |
+| `npm run format:check` | Prettier check; `npm run format` fixes the files |
 | `npm run e2e` | End-to-end tests (Playwright). Run `npx playwright install chromium` once first |
 
 The build prints a bundle-size budget warning for the initial bundle (Monaco). That is expected and
@@ -54,6 +55,7 @@ The [README](README.md) explains the features, the source layout and the main go
    npx ng test --watch=false
    npm run build
    npm run lint
+   npm run format:check  # `npm run format` fixes it
    npm run lint:styles   # if you changed a stylesheet
    npm run e2e           # if you changed UI behaviour
    ```
@@ -117,7 +119,7 @@ README), so mark breaking changes with `!` (`feat!: ...`) or a `BREAKING CHANGE:
 
 ## Pull request review
 
-- CI runs the style lint, unit tests, production build and end-to-end tests on every pull request.
+- CI runs the lint, style lint, format check, unit tests, production build and end-to-end tests on every pull request.
   All of them must pass.
 - Keep pull requests small and focused; they get reviewed faster.
 - Be ready to make changes after review. Once approved, the pull request is squash-merged into

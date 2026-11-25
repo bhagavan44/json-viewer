@@ -9,6 +9,8 @@
     "test": "ng test",
     "lint": "ng lint",
     "lint:styles": "stylelint \"src/**/*.scss\"",
+    "format": "prettier --write \"src/**/*.{ts,html,scss}\" \"e2e/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.{ts,html,scss}\" \"e2e/**/*.ts\"",
     "e2e": "playwright test"
   },
   "private": true,
