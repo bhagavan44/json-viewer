@@ -27,6 +27,7 @@
   <div class="workspace">
 
     <!-- Files sidebar (overlay drawer on narrow screens) -->
+    <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -- mouse-only dismiss; Escape closes the drawer -->
     <div class="files-panel-backdrop" *ngIf="showFilesPanel && isNarrow" (click)="closeFilesPanel()"></div>
     <app-files-panel
       [open]="showFilesPanel"

@@ -17,13 +17,14 @@ npm start                       # dev server, http://localhost:4200
 npm run build                   # production build -> dist/json-viewer/browser
 npm test                        # unit tests (Vitest, watch mode)
 npx ng test --watch=false       # unit tests once, as CI runs them
+npm run lint                    # ESLint (angular-eslint) over src/**/*.ts and templates
 npm run lint:styles             # Stylelint over src/**/*.scss
 npm run e2e                     # end-to-end tests (Playwright; `npx playwright install chromium` once)
 ```
 
-Before calling a task done, run the tests and the production build, and `npm run lint:styles` if
-you changed a stylesheet. Run `npm run e2e` too if you changed UI behaviour. CI runs the style lint, the unit tests and the
-build on every PR, plus the end-to-end tests in a separate job.
+Before calling a task done, run the tests, `npm run lint` and the production build, and
+`npm run lint:styles` if you changed a stylesheet. Run `npm run e2e` too if you changed UI behaviour.
+CI runs the lint, the style lint, the unit tests and the build on every PR, plus the end-to-end tests in a separate job.
 
 The build prints a bundle-size budget warning for the initial bundle (Monaco). It is expected today
 and is not a failure; don't treat it as a regression unless the build errors. A component style

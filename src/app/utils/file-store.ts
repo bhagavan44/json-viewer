@@ -163,7 +163,7 @@ export class IndexedDbFileStore implements FileStore {
 
   watch(listener: () => void): () => void {
     const ch = this.channel;
-    if (!ch) return () => {};
+    if (!ch) return () => undefined;
     const handler = () => listener();
     ch.addEventListener('message', handler);
     return () => ch.removeEventListener('message', handler);
@@ -203,7 +203,7 @@ export class LocalStorageFileStore implements FileStore {
   }
 
   watch(listener: () => void): () => void {
-    if (typeof window === 'undefined') return () => {};
+    if (typeof window === 'undefined') return () => undefined;
     const handler = (e: StorageEvent) => e.key === LEGACY_FILES_KEY && listener();
     window.addEventListener('storage', handler);
     return () => window.removeEventListener('storage', handler);

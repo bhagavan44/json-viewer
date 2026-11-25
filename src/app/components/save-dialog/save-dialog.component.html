@@ -1,13 +1,17 @@
+<!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -- clicking outside cancels; Escape does the same for the keyboard -->
 <div class="save-dialog-overlay" (click)="cancelled.emit()">
+  <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -- only stops the click reaching the overlay -->
   <div class="save-dialog" (click)="$event.stopPropagation()">
     <div class="save-dialog-header">
       <mat-icon>save</mat-icon>
       <span>Save JSON</span>
     </div>
     <div class="save-dialog-body">
-      <label class="save-label">File name</label>
+      <label class="save-label" for="save-file-name">File name</label>
       <div class="save-input-row">
+        <!-- eslint-disable @angular-eslint/template/no-autofocus -- the name field should take focus as soon as the dialog opens -->
         <input
+          id="save-file-name"
           class="save-input"
           [ngModel]="name"
           (ngModelChange)="nameChange.emit($event)"
@@ -15,6 +19,7 @@
           (keydown.enter)="confirmed.emit()"
           (keydown.escape)="cancelled.emit()"
           autofocus>
+        <!-- eslint-enable @angular-eslint/template/no-autofocus -->
         <button mat-icon-button (click)="randomName.emit()" matTooltip="Generate random name" class="dice-btn">
           <mat-icon>casino</mat-icon>
         </button>

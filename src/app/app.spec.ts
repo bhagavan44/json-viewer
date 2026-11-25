@@ -464,7 +464,7 @@ describe('App', () => {
       expect(app.ignoreError).toMatch(/^\$\.items\[: /);
 
       app.ignoreText = 'updatedAt';
-      app.diff;
+      void app.diff;
       expect(app.ignoreError).toBe('"updatedAt" is not a JSONPath (start it with $)');
     });
 

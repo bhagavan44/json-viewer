@@ -11,8 +11,6 @@ import {
   ViewChild,
 } from '@angular/core';
 
-declare const require: any;
-
 @Component({
   selector: 'app-json-editor',
   standalone: false,
@@ -22,7 +20,7 @@ declare const require: any;
 export class JsonEditorComponent implements OnInit, OnChanges, OnDestroy {
   @ViewChild('editorHost', { static: true }) editorHost!: ElementRef<HTMLElement>;
 
-  @Input() code: string = '';
+  @Input() code = '';
   @Input() theme: 'vs-dark' | 'vs' = 'vs-dark';
   @Output() codeChange = new EventEmitter<string>();
   /** Moves the cursor to a line and column (e.g. a parse error). `n` makes each request unique. */

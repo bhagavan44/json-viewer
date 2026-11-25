@@ -57,7 +57,7 @@ export function repairJson(input: string): RepairResult | null {
     const c = input[i];
 
     // Whitespace (including a BOM and non-breaking spaces from copied text).
-    if (/\s|﻿/.test(c)) {
+    if (/\s|\uFEFF/.test(c)) {
       if (c === '﻿' || c === ' ') note('removed invisible characters');
       else out += c;
       i++;
@@ -158,7 +158,7 @@ export function repairJson(input: string): RepairResult | null {
     // Numbers, including JSON5 forms.
     const num = /^[+-]?(0[xX][0-9a-fA-F]+|(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?)/.exec(input.slice(i, i + 400));
     if (num && !expectKey) {
-      let text = num[0];
+      const text = num[0];
       const sign = text[0] === '-' ? '-' : '';
       let body = text.replace(/^[+-]/, '');
       if (text[0] === '+') note('fixed number formats');

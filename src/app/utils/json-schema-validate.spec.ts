@@ -84,6 +84,7 @@ describe('validateSchema', () => {
 
   it('compares big numbers exactly and accepts integers as numbers', () => {
     const doc = parseJson('{"id": 9007199254740993, "n": 2}');
+    // eslint-disable-next-line no-loss-of-precision -- the literal is deliberately beyond 2^53
     expect(errors(doc, { properties: { id: { type: 'integer', const: 9007199254740993 }, n: { type: 'number' } } })).toEqual([]);
   });
 

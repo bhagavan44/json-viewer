@@ -1604,7 +1604,9 @@ export class App implements DoCheck, OnDestroy {
 
   /** Re-evaluates `isNarrow` (and the drawer backdrop) when the window resizes. */
   @HostListener('window:resize')
-  onWindowResize(): void {}
+  onWindowResize(): void {
+    // Intentionally empty: the listener only triggers a change-detection pass.
+  }
 
   get isNarrow(): boolean {
     return window.innerWidth < NARROW_BREAKPOINT;
