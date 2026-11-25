@@ -9,10 +9,24 @@ export interface RepairResult {
   fixes: string[];
 }
 
-const CLOSE_QUOTE: Record<string, string> = { '"': '"', "'": "'", '“': '”', '”': '”', '‘': '’', '’': '’' };
+const CLOSE_QUOTE: Record<string, string> = {
+  '"': '"',
+  "'": "'",
+  '“': '”',
+  '”': '”',
+  '‘': '’',
+  '’': '’',
+};
 const LITERALS: Record<string, string> = {
-  true: 'true', false: 'false', null: 'null',
-  True: 'true', False: 'false', None: 'null', undefined: 'null', NaN: 'null', Infinity: 'null',
+  true: 'true',
+  false: 'false',
+  null: 'null',
+  True: 'true',
+  False: 'false',
+  None: 'null',
+  undefined: 'null',
+  NaN: 'null',
+  Infinity: 'null',
 };
 
 /**
@@ -156,7 +170,9 @@ export function repairJson(input: string): RepairResult | null {
     }
 
     // Numbers, including JSON5 forms.
-    const num = /^[+-]?(0[xX][0-9a-fA-F]+|(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?)/.exec(input.slice(i, i + 400));
+    const num = /^[+-]?(0[xX][0-9a-fA-F]+|(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?)/.exec(
+      input.slice(i, i + 400),
+    );
     if (num && !expectKey) {
       const text = num[0];
       const sign = text[0] === '-' ? '-' : '';
@@ -240,7 +256,9 @@ function base64ToText(b64: string): string | null {
   if (!/^[A-Za-z0-9+/]*={0,2}$/.test(normal) || normal.length % 4 === 1) return null;
   try {
     const binary = atob(normal + '='.repeat((4 - (normal.length % 4)) % 4));
-    return new TextDecoder('utf-8', { fatal: true }).decode(Uint8Array.from(binary, (ch) => ch.charCodeAt(0)));
+    return new TextDecoder('utf-8', { fatal: true }).decode(
+      Uint8Array.from(binary, (ch) => ch.charCodeAt(0)),
+    );
   } catch {
     return null;
   }
@@ -266,7 +284,13 @@ const TIME_CLAIMS = ['exp', 'iat', 'nbf', 'auth_time'];
 export function decodeJwt(text: string): Record<string, unknown> | null {
   const token = text.trim().replace(/^Bearer\s+/i, '');
   const parts = token.split('.');
-  if (parts.length !== 3 || parts.some((p) => !/^[A-Za-z0-9_-]*$/.test(p)) || !parts[0] || !parts[1]) return null;
+  if (
+    parts.length !== 3 ||
+    parts.some((p) => !/^[A-Za-z0-9_-]*$/.test(p)) ||
+    !parts[0] ||
+    !parts[1]
+  )
+    return null;
   const header = parseObject(base64ToText(parts[0]));
   const payload = parseObject(base64ToText(parts[1]));
   if (!header || !payload || typeof header['alg'] !== 'string') return null;
@@ -274,7 +298,8 @@ export function decodeJwt(text: string): Record<string, unknown> | null {
   const times: Record<string, string> = {};
   for (const claim of TIME_CLAIMS) {
     const seconds = Number(payload[claim]);
-    if (typeof payload[claim] === 'number' && Number.isFinite(seconds)) times[claim] = new Date(seconds * 1000).toISOString();
+    if (typeof payload[claim] === 'number' && Number.isFinite(seconds))
+      times[claim] = new Date(seconds * 1000).toISOString();
   }
   if (Object.keys(times).length) doc['times'] = times;
   return doc;
@@ -319,15 +344,30 @@ export function findTextFix(text: string): TextFix | null {
 
   const unescaped = unescapeJsonText(text);
   if (unescaped !== null) {
-    return { button: 'Unescape', label: 'Unescape JSON (\\" → ")', detail: 'This looks like escaped JSON. Unescape it.', text: pretty(parseJson(unescaped)) };
+    return {
+      button: 'Unescape',
+      label: 'Unescape JSON (\\" → ")',
+      detail: 'This looks like escaped JSON. Unescape it.',
+      text: pretty(parseJson(unescaped)),
+    };
   }
   const jwt = decodeJwt(text);
   if (jwt) {
-    return { button: 'Decode JWT', label: 'Decode JWT', detail: 'Show the token’s header and payload. The signature is not verified.', text: pretty(jwt) };
+    return {
+      button: 'Decode JWT',
+      label: 'Decode JWT',
+      detail: 'Show the token’s header and payload. The signature is not verified.',
+      text: pretty(jwt),
+    };
   }
   const base64 = decodeBase64Json(text);
   if (base64 !== null) {
-    return { button: 'Decode Base64', label: 'Decode Base64', detail: 'This is Base64-encoded JSON. Decode it.', text: pretty(parseJson(base64)) };
+    return {
+      button: 'Decode Base64',
+      label: 'Decode Base64',
+      detail: 'This is Base64-encoded JSON. Decode it.',
+      text: pretty(parseJson(base64)),
+    };
   }
   const lines = parseJsonLines(text);
   if (lines) {
@@ -341,7 +381,12 @@ export function findTextFix(text: string): TextFix | null {
   const repair = repairJson(text);
   if (repair) {
     const what = repair.fixes.join(', ');
-    return { button: 'Repair', label: 'Repair JSON', detail: `Repair: ${what[0].toUpperCase()}${what.slice(1)}.`, text: repair.text };
+    return {
+      button: 'Repair',
+      label: 'Repair JSON',
+      detail: `Repair: ${what[0].toUpperCase()}${what.slice(1)}.`,
+      text: repair.text,
+    };
   }
   return null;
 }

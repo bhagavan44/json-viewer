@@ -28,7 +28,11 @@ describe('queryJsonPath', () => {
   });
 
   it('supports wildcards, unions and slices', () => {
-    expect(paths('$.books[*].title')).toEqual(['$.books[0].title', '$.books[1].title', '$.books[2].title']);
+    expect(paths('$.books[*].title')).toEqual([
+      '$.books[0].title',
+      '$.books[1].title',
+      '$.books[2].title',
+    ]);
     expect(values('$.books[0,2].title')).toEqual(['A', 'C']);
     expect(values("$.books[0]['title','price']")).toEqual(['A', 8.95]);
     expect(values('$.books[1:3].title')).toEqual(['B', 'C']);
@@ -76,7 +80,15 @@ describe('queryJsonPath', () => {
   });
 
   it('reports malformed expressions with a position', () => {
-    for (const bad of ['$.', '$[', '$.books[?(@.price >)]', "$['a", '$.books[?(@.x =~ /(/)]', '$..', '$.a b']) {
+    for (const bad of [
+      '$.',
+      '$[',
+      '$.books[?(@.price >)]',
+      "$['a",
+      '$.books[?(@.x =~ /(/)]',
+      '$..',
+      '$.a b',
+    ]) {
       expect(() => queryJsonPath(STORE, bad)).toThrow(JsonPathError);
     }
   });
@@ -88,7 +100,9 @@ describe('queryJsonPath', () => {
 
 describe('looksLikeJsonPath', () => {
   it('recognises path syntax but not ordinary searches', () => {
-    for (const yes of ['$', '$.a', '$..a', '$[0]', ' $.a']) expect(looksLikeJsonPath(yes)).toBe(true);
-    for (const no of ['price', '$5.00', '$$', '', 'a$.b']) expect(looksLikeJsonPath(no)).toBe(false);
+    for (const yes of ['$', '$.a', '$..a', '$[0]', ' $.a'])
+      expect(looksLikeJsonPath(yes)).toBe(true);
+    for (const no of ['price', '$5.00', '$$', '', 'a$.b'])
+      expect(looksLikeJsonPath(no)).toBe(false);
   });
 });

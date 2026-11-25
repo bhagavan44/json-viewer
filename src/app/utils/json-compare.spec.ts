@@ -23,7 +23,9 @@ describe('ignoreTextError', () => {
   it('reports an expression that is not a JSONPath, without needing the documents', () => {
     expect(ignoreTextError('')).toBeNull();
     expect(ignoreTextError('$..updatedAt, $.a')).toBeNull();
-    expect(ignoreTextError('$.a, updatedAt')).toBe('"updatedAt" is not a JSONPath (start it with $)');
+    expect(ignoreTextError('$.a, updatedAt')).toBe(
+      '"updatedAt" is not a JSONPath (start it with $)',
+    );
   });
 });
 

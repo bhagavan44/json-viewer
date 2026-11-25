@@ -19,20 +19,50 @@
 
   <ng-container *ngSwitchCase="'table'">
     <div class="table-toolbar">
-      <select class="tb-select" [ngModel]="table!.path" (ngModelChange)="selectPath($event)" aria-label="Array to show"
-        [title]="table!.path">
+      <select
+        class="tb-select"
+        [ngModel]="table!.path"
+        (ngModelChange)="selectPath($event)"
+        aria-label="Array to show"
+        [title]="table!.path"
+      >
         <option *ngFor="let t of tables" [value]="t.path">{{ label(t) }}</option>
       </select>
       <mat-icon class="tb-icon">filter_list</mat-icon>
-      <input class="tb-input" type="text" [(ngModel)]="query" (ngModelChange)="onQueryChange()"
-        (keydown.escape)="query = ''; onQueryChange()" placeholder="Filter rows" aria-label="Filter rows">
-      <span class="tb-count">{{ view.length }}<ng-container *ngIf="view.length !== table!.rows.length"> / {{ table!.rows.length }}</ng-container> rows</span>
-      <button type="button" class="tb-btn" (click)="copyCsv()" [disabled]="!view.length"
-        matTooltip="Copy the rows shown as CSV" aria-label="Copy as CSV">
+      <input
+        class="tb-input"
+        type="text"
+        [(ngModel)]="query"
+        (ngModelChange)="onQueryChange()"
+        (keydown.escape)="query = ''; onQueryChange()"
+        placeholder="Filter rows"
+        aria-label="Filter rows"
+      />
+      <span class="tb-count"
+        >{{ view.length
+        }}<ng-container *ngIf="view.length !== table!.rows.length">
+          / {{ table!.rows.length }}</ng-container
+        >
+        rows</span
+      >
+      <button
+        type="button"
+        class="tb-btn"
+        (click)="copyCsv()"
+        [disabled]="!view.length"
+        matTooltip="Copy the rows shown as CSV"
+        aria-label="Copy as CSV"
+      >
         <mat-icon>content_copy</mat-icon>
       </button>
-      <button type="button" class="tb-btn" (click)="downloadCsv()" [disabled]="!view.length"
-        matTooltip="Download the rows shown as CSV" aria-label="Download CSV">
+      <button
+        type="button"
+        class="tb-btn"
+        (click)="downloadCsv()"
+        [disabled]="!view.length"
+        matTooltip="Download the rows shown as CSV"
+        aria-label="Download CSV"
+      >
         <mat-icon>download</mat-icon>
       </button>
     </div>
@@ -45,7 +75,9 @@
             <th *ngFor="let c of columns" scope="col" [attr.aria-sort]="ariaSort(c)">
               <button type="button" class="sort-btn" (click)="sortBy(c)" [title]="'Sort by ' + c">
                 <span>{{ c }}</span>
-                <mat-icon *ngIf="sortColumn === c">{{ sortDir === 1 ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+                <mat-icon *ngIf="sortColumn === c">{{
+                  sortDir === 1 ? 'arrow_upward' : 'arrow_downward'
+                }}</mat-icon>
               </button>
             </th>
           </tr>
@@ -53,7 +85,9 @@
         <tbody>
           <tr *ngFor="let i of view | slice: 0 : limit">
             <td class="idx">{{ i }}</td>
-            <td *ngFor="let c of columns" [class.missing]="isMissing(i, c)" [title]="cell(i, c)">{{ cell(i, c) }}</td>
+            <td *ngFor="let c of columns" [class.missing]="isMissing(i, c)" [title]="cell(i, c)">
+              {{ cell(i, c) }}
+            </td>
           </tr>
         </tbody>
       </table>

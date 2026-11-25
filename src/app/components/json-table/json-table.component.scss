@@ -144,7 +144,11 @@ td.idx {
 }
 
 td.missing {
-  background: repeating-linear-gradient(135deg, transparent 0 4px, rgba(128, 144, 168, 0.08) 4px 8px);
+  background: repeating-linear-gradient(
+    135deg,
+    transparent 0 4px,
+    rgba(128, 144, 168, 0.08) 4px 8px
+  );
 }
 
 tbody tr:hover td:not(.idx) {

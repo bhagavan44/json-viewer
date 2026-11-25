@@ -1,5 +1,11 @@
 import { LosslessNumber, parseJson, stringifyJson } from './json-parse';
-import { looksLikeJson, parseEmbedded, replaceAt, unescapeJsonText, unwrapAll } from './json-unwrap';
+import {
+  looksLikeJson,
+  parseEmbedded,
+  replaceAt,
+  unescapeJsonText,
+  unwrapAll,
+} from './json-unwrap';
 
 describe('parseEmbedded', () => {
   it('parses objects and arrays stored in strings', () => {
@@ -18,7 +24,9 @@ describe('parseEmbedded', () => {
   });
 
   it('keeps big numbers exact', () => {
-    expect(parseEmbedded('{"id":1234567890123456789}')).toEqual({ id: new LosslessNumber('1234567890123456789') });
+    expect(parseEmbedded('{"id":1234567890123456789}')).toEqual({
+      id: new LosslessNumber('1234567890123456789'),
+    });
   });
 });
 
@@ -39,11 +47,18 @@ describe('unwrapAll', () => {
     };
     const { value, count } = unwrapAll(doc);
     expect(count).toBe(3);
-    expect(value).toEqual({ id: 7, message: { body: [{ sku: 'A' }], note: 'plain' }, list: [{ x: true }, 'text'] });
+    expect(value).toEqual({
+      id: 7,
+      message: { body: [{ sku: 'A' }], note: 'plain' },
+      list: [{ x: true }, 'text'],
+    });
   });
 
   it('unwraps a document that is itself a JSON string', () => {
-    expect(unwrapAll(parseJson(JSON.stringify(JSON.stringify({ a: 1 }))))).toEqual({ value: { a: 1 }, count: 1 });
+    expect(unwrapAll(parseJson(JSON.stringify(JSON.stringify({ a: 1 }))))).toEqual({
+      value: { a: 1 },
+      count: 1,
+    });
   });
 
   it('reports nothing to do', () => {

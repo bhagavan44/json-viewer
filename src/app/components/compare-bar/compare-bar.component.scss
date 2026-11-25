@@ -22,9 +22,18 @@
     font-weight: 600;
     font-size: 12px;
 
-    &.add { background: var(--diff-add-bg); color: var(--diff-add); }
-    &.del { background: var(--diff-del-bg); color: var(--diff-del); }
-    &.chg { background: var(--diff-chg-bg); color: var(--diff-chg); }
+    &.add {
+      background: var(--diff-add-bg);
+      color: var(--diff-add);
+    }
+    &.del {
+      background: var(--diff-del-bg);
+      color: var(--diff-del);
+    }
+    &.chg {
+      background: var(--diff-chg-bg);
+      color: var(--diff-chg);
+    }
   }
 
   .matched-by {

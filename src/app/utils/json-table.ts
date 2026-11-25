@@ -43,7 +43,8 @@ export function findTables(doc: unknown): JsonTable[] {
       for (const o of objects) for (const k of Object.keys(o)) keys.add(k);
       for (const k of keys) {
         const children = objects.filter((o) => Object.hasOwn(o, k)).map((o) => o[k]);
-        if (children.some((c) => !isScalar(c))) queue.push({ path: childPath(path, k, false), values: children });
+        if (children.some((c) => !isScalar(c)))
+          queue.push({ path: childPath(path, k, false), values: children });
       }
     }
   }

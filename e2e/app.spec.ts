@@ -99,7 +99,7 @@ test('restores the session from IndexedDB after a reload', async ({ page }) => {
             open.onerror = () => resolve(null);
             open.onsuccess = () => {
               const db = open.result;
-              if (!db.objectStoreNames.contains('session')) return resolve(null), db.close();
+              if (!db.objectStoreNames.contains('session')) return (resolve(null), db.close());
               const get = db.transaction('session').objectStore('session').get('current');
               get.onsuccess = () => (resolve(get.result?.left?.text ?? null), db.close());
               get.onerror = () => (resolve(null), db.close());

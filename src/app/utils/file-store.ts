@@ -42,7 +42,9 @@ const CHANNEL = 'json-viewer-files';
 const newestFirst = (files: SavedFile[]) => files.sort((a, b) => b.savedAt - a.savedAt);
 
 function isSavedFile(f: any): f is SavedFile {
-  return !!f && typeof f.id === 'string' && typeof f.name === 'string' && typeof f.content === 'string';
+  return (
+    !!f && typeof f.id === 'string' && typeof f.name === 'string' && typeof f.content === 'string'
+  );
 }
 
 function readLegacy(): SavedFile[] {
@@ -115,7 +117,8 @@ export class IndexedDbFileStore implements FileStore {
         e.stopPropagation();
       };
       for (const f of legacy) tx.objectStore(STORE).add(f).onerror = keepExisting;
-      if (legacySession) tx.objectStore(SESSION_STORE).add(legacySession, SESSION_ID).onerror = keepExisting;
+      if (legacySession)
+        tx.objectStore(SESSION_STORE).add(legacySession, SESSION_ID).onerror = keepExisting;
       await done(tx);
     }
     for (const key of [LEGACY_FILES_KEY, LEGACY_SESSION_KEY]) {
@@ -150,7 +153,10 @@ export class IndexedDbFileStore implements FileStore {
   }
 
   async loadSession(): Promise<unknown> {
-    const req = (await this.open()).transaction(SESSION_STORE).objectStore(SESSION_STORE).get(SESSION_ID);
+    const req = (await this.open())
+      .transaction(SESSION_STORE)
+      .objectStore(SESSION_STORE)
+      .get(SESSION_ID);
     await done(req);
     return req.result ?? null;
   }

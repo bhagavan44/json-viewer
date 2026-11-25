@@ -90,7 +90,11 @@
 
     button[mat-stroked-button] {
       // Set on the button itself: mat-toolbar resets this token on buttons inside it.
-      @include mat.button-overrides((outlined-label-text-color: rgba(255, 255, 255, 0.85)));
+      @include mat.button-overrides(
+        (
+          outlined-label-text-color: rgba(255, 255, 255, 0.85),
+        )
+      );
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -112,7 +116,11 @@
       }
 
       &:hover {
-        @include mat.button-overrides((outlined-outline-color: rgba(255, 255, 255, 0.4)));
+        @include mat.button-overrides(
+          (
+            outlined-outline-color: rgba(255, 255, 255, 0.4),
+          )
+        );
         background: rgba(255, 255, 255, 0.08);
       }
 
@@ -143,7 +151,11 @@
         display: none;
       }
 
-      @include mat.button-overrides((outlined-horizontal-padding: 8px));
+      @include mat.button-overrides(
+        (
+          outlined-horizontal-padding: 8px,
+        )
+      );
 
       button[mat-stroked-button] {
         gap: 0;

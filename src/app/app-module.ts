@@ -63,6 +63,6 @@ import { CompareBarComponent } from './components/compare-bar/compare-bar.compon
       registrationStrategy: 'registerWhenStable:30000',
     }),
   ],
-  bootstrap: [App]
+  bootstrap: [App],
 })
-export class AppModule { }
+export class AppModule {}

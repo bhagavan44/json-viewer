@@ -787,7 +787,10 @@ export class App implements DoCheck, OnDestroy {
     this.ignoreError = outcome.ignoreError;
   }
 
-  private async diffInWorker(key: App['diffCache'], [left, right]: [string, string]): Promise<void> {
+  private async diffInWorker(
+    key: App['diffCache'],
+    [left, right]: [string, string],
+  ): Promise<void> {
     const { matchArrays, ignoreText } = key;
     let outcome: CompareOutcome;
     try {

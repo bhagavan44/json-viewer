@@ -63,7 +63,8 @@ function walk(text: string, visit: (span: TextSpan) => boolean | void): void {
     } else {
       while (i < text.length && !/[\s,\]}]/.test(text[i])) i++;
     }
-    if (!stopped && visit({ path, start, end: i, keyStart: keyStart < 0 ? start : keyStart })) stopped = true;
+    if (!stopped && visit({ path, start, end: i, keyStart: keyStart < 0 ? start : keyStart }))
+      stopped = true;
   };
   value('$', -1);
 }

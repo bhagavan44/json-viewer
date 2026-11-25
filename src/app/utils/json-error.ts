@@ -21,7 +21,8 @@ export function locateJsonError(text: string, message: string): JsonErrorLocatio
   if (m) return { line: +m[1], column: +m[2] };
   m = /position (\d+)/i.exec(message);
   if (m) return offsetToLocation(text, +m[1]);
-  if (/end of (json|data)|unexpected end/i.test(message)) return offsetToLocation(text, text.length);
+  if (/end of (json|data)|unexpected end/i.test(message))
+    return offsetToLocation(text, text.length);
   return null;
 }
 

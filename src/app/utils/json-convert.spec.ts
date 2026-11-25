@@ -5,7 +5,10 @@ describe('toCSharp', () => {
   it('declares classes with JSON names, merged array items and nullable members', () => {
     const cs = toCSharp({
       order_id: 'SO-1',
-      lines: [{ sku: 'A', qty: 1, note: 'gift' }, { sku: 'B', qty: 2 }],
+      lines: [
+        { sku: 'A', qty: 1, note: 'gift' },
+        { sku: 'B', qty: 2 },
+      ],
       paid: true,
       coupon: null,
     });

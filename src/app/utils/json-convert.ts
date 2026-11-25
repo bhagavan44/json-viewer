@@ -13,7 +13,9 @@ function yamlScalar(value: any): string {
 }
 
 function yamlKey(key: string): string {
-  return PLAIN_YAML.test(key) && !YAML_RESERVED.test(key) && !/\s$/.test(key) ? key : JSON.stringify(key);
+  return PLAIN_YAML.test(key) && !YAML_RESERVED.test(key) && !/\s$/.test(key)
+    ? key
+    : JSON.stringify(key);
 }
 
 function isNonEmptyContainer(v: any): boolean {
@@ -28,7 +30,9 @@ export function toYaml(value: any, indent = 0): string {
     if (!value.length) return pad + '[]';
     return value
       .map((item: any) =>
-        isNonEmptyContainer(item) ? `${pad}- ${toYaml(item, indent + 1).trimStart()}` : `${pad}- ${emptyOrScalar(item)}`,
+        isNonEmptyContainer(item)
+          ? `${pad}- ${toYaml(item, indent + 1).trimStart()}`
+          : `${pad}- ${emptyOrScalar(item)}`,
       )
       .join('\n');
   }
@@ -37,7 +41,9 @@ export function toYaml(value: any, indent = 0): string {
     if (!entries.length) return pad + '{}';
     return entries
       .map(([k, v]) =>
-        isNonEmptyContainer(v) ? `${pad}${yamlKey(k)}:\n${toYaml(v, indent + 1)}` : `${pad}${yamlKey(k)}: ${emptyOrScalar(v)}`,
+        isNonEmptyContainer(v)
+          ? `${pad}${yamlKey(k)}:\n${toYaml(v, indent + 1)}`
+          : `${pad}${yamlKey(k)}: ${emptyOrScalar(v)}`,
       )
       .join('\n');
   }
@@ -93,9 +99,15 @@ export function toTypeScript(value: any, rootName = 'Root'): string {
       const having = objects.filter((o) => Object.hasOwn(o, key));
       const optional = having.length < objects.length ? '?' : '';
       const prop = IDENTIFIER.test(key) ? key : JSON.stringify(key);
-      return `  ${prop}${optional}: ${infer(having.map((o) => o[key]), name + pascal(key))};`;
+      return `  ${prop}${optional}: ${infer(
+        having.map((o) => o[key]),
+        name + pascal(key),
+      )};`;
     });
-    decls.set(name, lines.length ? `interface ${name} {\n${lines.join('\n')}\n}` : `interface ${name} {}`);
+    decls.set(
+      name,
+      lines.length ? `interface ${name} {\n${lines.join('\n')}\n}` : `interface ${name} {}`,
+    );
     return name;
   };
 
@@ -171,7 +183,10 @@ export function toCSharp(value: any, rootName = 'Root'): string {
       if (prop === name) prop += 'Value'; // a member cannot share its class's name
       for (let i = 2, base = prop; props.has(prop); i++) prop = base + i;
       props.add(prop);
-      const { type, nullable } = infer(having.map((o) => o[key]), name + pascal(key));
+      const { type, nullable } = infer(
+        having.map((o) => o[key]),
+        name + pascal(key),
+      );
       const optional = nullable || having.length < objects.length ? '?' : '';
       return `    [JsonPropertyName(${JSON.stringify(key)})]\n    public ${type}${optional} ${prop} { get; set; }`;
     });
@@ -197,15 +212,22 @@ export function toCSharp(value: any, rootName = 'Root'): string {
         return { type: declare(present, name), nullable };
       default: {
         const items = present.flat();
-        const inner = items.length ? infer(items, singular(name)) : { type: 'object', nullable: true };
+        const inner = items.length
+          ? infer(items, singular(name))
+          : { type: 'object', nullable: true };
         return { type: `List<${inner.type}${inner.nullable ? '?' : ''}>`, nullable };
       }
     }
   };
 
   const top = infer([value], rootName);
-  const out = ['using System;', 'using System.Collections.Generic;', 'using System.Text.Json.Serialization;'];
-  if (top.type !== rootName) out.push('', `// Deserialize the document as: ${top.type}${top.nullable ? '?' : ''}`);
+  const out = [
+    'using System;',
+    'using System.Collections.Generic;',
+    'using System.Text.Json.Serialization;',
+  ];
+  if (top.type !== rootName)
+    out.push('', `// Deserialize the document as: ${top.type}${top.nullable ? '?' : ''}`);
   for (const decl of classes.values()) out.push('', decl);
   return out.join('\n') + '\n';
 }

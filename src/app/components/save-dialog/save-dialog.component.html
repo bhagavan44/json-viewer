@@ -18,16 +18,29 @@
           placeholder="Enter file name…"
           (keydown.enter)="confirmed.emit()"
           (keydown.escape)="cancelled.emit()"
-          autofocus>
+          autofocus
+        />
         <!-- eslint-enable @angular-eslint/template/no-autofocus -->
-        <button mat-icon-button (click)="randomName.emit()" matTooltip="Generate random name" class="dice-btn">
+        <button
+          mat-icon-button
+          (click)="randomName.emit()"
+          matTooltip="Generate random name"
+          class="dice-btn"
+        >
           <mat-icon>casino</mat-icon>
         </button>
       </div>
     </div>
     <div class="save-dialog-actions">
       <button mat-stroked-button (click)="cancelled.emit()">Cancel</button>
-      <button mat-flat-button (click)="confirmed.emit()" [disabled]="!name.trim()" class="save-confirm-btn">Save</button>
+      <button
+        mat-flat-button
+        (click)="confirmed.emit()"
+        [disabled]="!name.trim()"
+        class="save-confirm-btn"
+      >
+        Save
+      </button>
     </div>
   </div>
 </div>

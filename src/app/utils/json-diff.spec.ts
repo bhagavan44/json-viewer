@@ -39,8 +39,20 @@ describe('diffJson', () => {
 });
 
 describe('diffJson with matchArrays', () => {
-  const before = { lines: [{ sku: 'A', qty: 1 }, { sku: 'B', qty: 2 }, { sku: 'C', qty: 3 }] };
-  const after = { lines: [{ sku: 'NEW', qty: 9 }, { sku: 'A', qty: 1 }, { sku: 'C', qty: 4 }] };
+  const before = {
+    lines: [
+      { sku: 'A', qty: 1 },
+      { sku: 'B', qty: 2 },
+      { sku: 'C', qty: 3 },
+    ],
+  };
+  const after = {
+    lines: [
+      { sku: 'NEW', qty: 9 },
+      { sku: 'A', qty: 1 },
+      { sku: 'C', qty: 4 },
+    ],
+  };
 
   it('by index, an insertion at the start marks every item as changed', () => {
     expect(diffJson(before, after).changed).toBe(5); // sku+qty at [0] and [1], qty at [2]
@@ -59,8 +71,24 @@ describe('diffJson with matchArrays', () => {
   });
 
   it('records both paths when a matched item moved', () => {
-    const r = diffJson({ a: [{ id: 1, v: 'x' }, { id: 2, v: 'y' }] }, { a: [{ id: 2, v: 'Y' }, { id: 1, v: 'x' }] }, { matchArrays: true });
-    expect(r.changes).toEqual([{ path: '$.a[1].v', rightPath: '$.a[0].v', kind: 'chg', before: 'y', after: 'Y' }]);
+    const r = diffJson(
+      {
+        a: [
+          { id: 1, v: 'x' },
+          { id: 2, v: 'y' },
+        ],
+      },
+      {
+        a: [
+          { id: 2, v: 'Y' },
+          { id: 1, v: 'x' },
+        ],
+      },
+      { matchArrays: true },
+    );
+    expect(r.changes).toEqual([
+      { path: '$.a[1].v', rightPath: '$.a[0].v', kind: 'chg', before: 'y', after: 'Y' },
+    ]);
     expect(r.left['$.a[1].v']).toBe('chg');
     expect(r.right['$.a[0].v']).toBe('chg');
   });
@@ -81,9 +109,15 @@ describe('diffJson with matchArrays', () => {
   });
 
   it('prefers well-known keys, then id-like keys', () => {
-    expect(findArrayKey([{ name: 'a', orderId: 7, sku: 'x' }], [{ name: 'a', orderId: 7, sku: 'x' }])).toBe('sku');
-    expect(findArrayKey([{ qty: 1, order_no: 'A1' }], [{ qty: 1, order_no: 'A2' }])).toBe('order_no');
-    expect(findArrayKey([{ productNumber: 'P1' }], [{ productNumber: 'P2' }])).toBe('productNumber');
+    expect(
+      findArrayKey([{ name: 'a', orderId: 7, sku: 'x' }], [{ name: 'a', orderId: 7, sku: 'x' }]),
+    ).toBe('sku');
+    expect(findArrayKey([{ qty: 1, order_no: 'A1' }], [{ qty: 1, order_no: 'A2' }])).toBe(
+      'order_no',
+    );
+    expect(findArrayKey([{ productNumber: 'P1' }], [{ productNumber: 'P2' }])).toBe(
+      'productNumber',
+    );
   });
 });
 
@@ -95,7 +129,9 @@ describe('diffJson with ignore', () => {
       left: new Set(['$.updatedAt', '$.meta', '$.items[0].stamp', '$.gone']),
       right: new Set(['$.updatedAt', '$.meta', '$.items[0].stamp']),
     };
-    expect(diffJson(before, after, { ignore }).changes).toEqual([{ path: '$.extra', kind: 'add', after: 1 }]);
+    expect(diffJson(before, after, { ignore }).changes).toEqual([
+      { path: '$.extra', kind: 'add', after: 1 },
+    ]);
   });
 });
 

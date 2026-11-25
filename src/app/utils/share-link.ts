@@ -33,14 +33,20 @@ function fromBase64Url(text: string): Uint8Array {
   return Uint8Array.from(binary, (c) => c.charCodeAt(0));
 }
 
-async function pipeThrough(bytes: Uint8Array, stream: unknown, limit = Infinity): Promise<Uint8Array> {
+async function pipeThrough(
+  bytes: Uint8Array,
+  stream: unknown,
+  limit = Infinity,
+): Promise<Uint8Array> {
   const source = new ReadableStream<Uint8Array>({
     start(controller) {
       controller.enqueue(bytes);
       controller.close();
     },
   });
-  const reader = source.pipeThrough(stream as ReadableWritablePair<Uint8Array, Uint8Array>).getReader();
+  const reader = source
+    .pipeThrough(stream as ReadableWritablePair<Uint8Array, Uint8Array>)
+    .getReader();
   const chunks: Uint8Array[] = [];
   let total = 0;
   for (;;) {
@@ -66,7 +72,9 @@ export async function encodeShare(
   state: SharedState,
   compress = typeof CompressionStream !== 'undefined',
 ): Promise<string> {
-  const bytes = new TextEncoder().encode(JSON.stringify({ v: 1, l: state.left, r: state.right, m: state.view }));
+  const bytes = new TextEncoder().encode(
+    JSON.stringify({ v: 1, l: state.left, r: state.right, m: state.view }),
+  );
   if (!compress) return 'r.' + toBase64Url(bytes);
   return 'z.' + toBase64Url(await pipeThrough(bytes, new CompressionStream('deflate-raw')));
 }
@@ -81,7 +89,8 @@ export async function decodeShare(payload: string): Promise<SharedState> {
     }
     let bytes = fromBase64Url(body);
     if (kind === 'z') {
-      if (typeof DecompressionStream === 'undefined') throw new ShareLinkError('This browser cannot open compressed links');
+      if (typeof DecompressionStream === 'undefined')
+        throw new ShareLinkError('This browser cannot open compressed links');
       bytes = await pipeThrough(bytes, new DecompressionStream('deflate-raw'), MAX_DECODED_BYTES);
     } else if (bytes.length > MAX_DECODED_BYTES) {
       throw new ShareLinkError('This link expands to more than the allowed size');
@@ -93,7 +102,9 @@ export async function decodeShare(payload: string): Promise<SharedState> {
     return { left: data.l, right: data.r, view: data.m === 'compare' ? 'compare' : 'edit' };
   } catch (e) {
     // Base64, inflate and JSON failures carry browser-internal messages; give a plain one instead.
-    throw e instanceof ShareLinkError ? e : new ShareLinkError('The link looks damaged or incomplete');
+    throw e instanceof ShareLinkError
+      ? e
+      : new ShareLinkError('The link looks damaged or incomplete');
   }
 }
 

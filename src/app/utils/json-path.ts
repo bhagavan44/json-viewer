@@ -297,9 +297,16 @@ interface Node {
 
 function children(node: Node): Node[] {
   const type = jsonTypeOf(node.value);
-  if (type === 'array') return node.value.map((v: unknown, i: number) => ({ path: childPath(node.path, i, true), value: v }));
+  if (type === 'array')
+    return node.value.map((v: unknown, i: number) => ({
+      path: childPath(node.path, i, true),
+      value: v,
+    }));
   if (type === 'object')
-    return Object.entries(node.value).map(([k, v]) => ({ path: childPath(node.path, k, false), value: v }));
+    return Object.entries(node.value).map(([k, v]) => ({
+      path: childPath(node.path, k, false),
+      value: v,
+    }));
   return [];
 }
 
@@ -320,7 +327,9 @@ function select(selector: Selector, node: Node, ctx: Ctx): Node[] {
     case 'index': {
       if (type !== 'array') return [];
       const i = selector.index < 0 ? node.value.length + selector.index : selector.index;
-      return i >= 0 && i < node.value.length ? [{ path: childPath(node.path, i, true), value: node.value[i] }] : [];
+      return i >= 0 && i < node.value.length
+        ? [{ path: childPath(node.path, i, true), value: node.value[i] }]
+        : [];
     }
     case 'wild':
       return children(node);
@@ -328,16 +337,19 @@ function select(selector: Selector, node: Node, ctx: Ctx): Node[] {
       if (type !== 'array') return [];
       const len = node.value.length;
       const { step } = selector;
-      const norm = (n: number) => (n < 0 ? Math.max(len + n, step < 0 ? -1 : 0) : Math.min(n, step < 0 ? len - 1 : len));
+      const norm = (n: number) =>
+        n < 0 ? Math.max(len + n, step < 0 ? -1 : 0) : Math.min(n, step < 0 ? len - 1 : len);
       const out: Node[] = [];
       if (step > 0) {
         const from = selector.start === null ? 0 : norm(selector.start);
         const to = selector.end === null ? len : norm(selector.end);
-        for (let i = from; i < to; i += step) out.push({ path: childPath(node.path, i, true), value: node.value[i] });
+        for (let i = from; i < to; i += step)
+          out.push({ path: childPath(node.path, i, true), value: node.value[i] });
       } else {
         const from = selector.start === null ? len - 1 : norm(selector.start);
         const to = selector.end === null ? -1 : norm(selector.end);
-        for (let i = from; i > to; i += step) out.push({ path: childPath(node.path, i, true), value: node.value[i] });
+        for (let i = from; i > to; i += step)
+          out.push({ path: childPath(node.path, i, true), value: node.value[i] });
       }
       return out;
     }
@@ -365,7 +377,8 @@ function run(segments: Segment[], start: Node[], ctx: Ctx): Node[] {
             if (seen.has(hit.path)) continue;
             seen.add(hit.path);
             next.push(hit);
-            if (--ctx.budget.left < 0) throw new JsonPathError('Too many results; narrow the query', 0);
+            if (--ctx.budget.left < 0)
+              throw new JsonPathError('Too many results; narrow the query', 0);
           }
         }
       }
@@ -379,14 +392,24 @@ const num = (v: unknown): number | null =>
   typeof v === 'number' ? v : v instanceof LosslessNumber ? Number(v.raw) : null;
 
 function deepEqual(a: unknown, b: unknown): boolean {
-  const na = num(a), nb = num(b);
-  if (na !== null && nb !== null) return a instanceof LosslessNumber && b instanceof LosslessNumber ? a.raw === b.raw : na === nb;
+  const na = num(a),
+    nb = num(b);
+  if (na !== null && nb !== null)
+    return a instanceof LosslessNumber && b instanceof LosslessNumber ? a.raw === b.raw : na === nb;
   const ta = jsonTypeOf(a);
   if (ta !== jsonTypeOf(b)) return false;
-  if (ta === 'array') return (a as any[]).length === (b as any[]).length && (a as any[]).every((v, i) => deepEqual(v, (b as any[])[i]));
+  if (ta === 'array')
+    return (
+      (a as any[]).length === (b as any[]).length &&
+      (a as any[]).every((v, i) => deepEqual(v, (b as any[])[i]))
+    );
   if (ta === 'object') {
-    const ka = Object.keys(a as object), kb = Object.keys(b as object);
-    return ka.length === kb.length && ka.every((k) => k in (b as object) && deepEqual((a as any)[k], (b as any)[k]));
+    const ka = Object.keys(a as object),
+      kb = Object.keys(b as object);
+    return (
+      ka.length === kb.length &&
+      ka.every((k) => k in (b as object) && deepEqual((a as any)[k], (b as any)[k]))
+    );
   }
   return a === b;
 }
@@ -401,7 +424,9 @@ function evalValue(expr: Expr, current: Node, ctx: Ctx): unknown {
     }
     case 'fn': {
       if (expr.name === 'count') {
-        return expr.arg.k === 'query' ? run(expr.arg.segments, [expr.arg.abs ? ctx.root : current], ctx).length : NOTHING;
+        return expr.arg.k === 'query'
+          ? run(expr.arg.segments, [expr.arg.abs ? ctx.root : current], ctx).length
+          : NOTHING;
       }
       const v = evalValue(expr.arg, current, ctx);
       if (typeof v === 'string') return [...v].length;
@@ -436,12 +461,20 @@ function truthy(expr: Expr, current: Node, ctx: Ctx): boolean {
         case '=~':
           return typeof l === 'string' && r instanceof RegExp && r.test(l);
         default: {
-          const a = num(l), b = num(r);
+          const a = num(l),
+            b = num(r);
           const bothNumbers = a !== null && b !== null;
           const bothStrings = typeof l === 'string' && typeof r === 'string';
           if (!bothNumbers && !bothStrings) return false;
-          const x = bothNumbers ? a : (l as string), y = bothNumbers ? b : (r as string);
-          return expr.op === '<' ? x < y : expr.op === '<=' ? x <= y : expr.op === '>' ? x > y : x >= y;
+          const x = bothNumbers ? a : (l as string),
+            y = bothNumbers ? b : (r as string);
+          return expr.op === '<'
+            ? x < y
+            : expr.op === '<='
+              ? x <= y
+              : expr.op === '>'
+                ? x > y
+                : x >= y;
         }
       }
     }
