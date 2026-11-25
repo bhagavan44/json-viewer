@@ -52,10 +52,11 @@ import {
 } from './utils/share-link';
 import { PaletteCommand } from './components/command-palette/command-palette.component';
 import { FileStore, LocalStorageFileStore, SavedFile, createFileStore } from './utils/file-store';
+import { PANEL_MODES, PanelMode, RestoredSession, SessionState } from './utils/session';
+import { SessionService } from './services/session.service';
 
 export type { SavedFile } from './utils/file-store';
-
-export type PanelMode = 'editor' | 'tree' | 'table';
+export type { PanelMode } from './utils/session';
 
 /** What the schema validation panel shows. */
 export interface ValidationView {
@@ -73,8 +74,6 @@ function parentPath(path: string): string {
   const steps = pathSegments(path);
   return steps.length > 1 ? steps[steps.length - 2].path : '$';
 }
-
-const PANEL_MODES: PanelMode[] = ['editor', 'tree', 'table'];
 
 export interface PanelState {
   jsonText: string;
@@ -123,23 +122,6 @@ const MIN_PANE_WIDTH = 200;
 const NARROW_BREAKPOINT = 1000;
 const THEME_KEY = 'json-viewer-theme';
 
-interface PaneSession {
-  /** Unsaved text. Omitted when the pane just mirrors a saved file. */
-  text: string | null;
-  fileId: string | null;
-  sourceName: string | null;
-  mode: PanelMode;
-}
-
-interface Session {
-  version: 1;
-  left: PaneSession;
-  right: PaneSession;
-  viewMode: 'edit' | 'compare';
-  active: 'left' | 'right';
-  matchArrays?: boolean;
-  ignoreText?: string;
-}
 /** Larger files are refused: they would freeze the editor and cannot be kept in browser storage. */
 const MAX_OPEN_BYTES = 25 * 1024 * 1024;
 /** Above this size, parsing while typing waits until the user pauses. */
@@ -154,6 +136,8 @@ export const WORKER_MIN_CHARS = LARGE_TEXT_CHARS;
   standalone: false,
   templateUrl: './app.html',
   styleUrl: './app.scss',
+  // One per app, so its timer and store go away with it.
+  providers: [SessionService],
 })
 export class App implements DoCheck, OnDestroy {
   @ViewChild('leftPanel', { static: false }) leftPanelRef!: ElementRef<HTMLElement>;
@@ -205,6 +189,7 @@ export class App implements DoCheck, OnDestroy {
   constructor(
     private snackBar: MatSnackBar,
     private cdr: ChangeDetectorRef,
+    private session: SessionService,
     @Optional() private swUpdate: SwUpdate | null,
   ) {
     this.activePanel = this.left;
@@ -216,12 +201,14 @@ export class App implements DoCheck, OnDestroy {
   /** Resolves once saved files are loaded and the previous session is restored. */
   readonly ready: Promise<void>;
   private store: FileStore = createFileStore();
-  private loaded = false;
   private unwatchFiles?: () => void;
 
   private async init(): Promise<void> {
     this.savedFiles = await this.loadFiles();
-    if (!(await this.restoreSession())) {
+    const restored = await this.session.restore(this.store, this.savedFiles);
+    if (restored) {
+      this.applySession(restored);
+    } else {
       // First visit with saved files: start with the two most recent side by side.
       const [first, second] = this.savedFiles;
       if (first) this.assignFile(first, this.left);
@@ -229,7 +216,7 @@ export class App implements DoCheck, OnDestroy {
     }
     // A share link in the address bar wins over the restored session.
     await this.openSharedHash(location.hash);
-    this.loaded = true;
+    this.session.start(this.store, () => this.sessionState());
     this.unwatchFiles = this.store.watch(() => void this.reloadFiles());
     this.cdr.markForCheck();
     this.preloadRareFeatures();
@@ -291,7 +278,6 @@ export class App implements DoCheck, OnDestroy {
   ngOnDestroy(): void {
     this.updateSub?.unsubscribe();
     this.unwatchFiles?.();
-    clearTimeout(this.sessionTimer);
     for (const timer of this.parseTimers.values()) clearTimeout(timer);
     this.parseTimers.clear();
     this.worker?.dispose();
@@ -1160,72 +1146,15 @@ export class App implements DoCheck, OnDestroy {
   }
 
   // ── Session (autosave / restore) ──────────────────────────────────────────
-  private sessionTimer?: ReturnType<typeof setTimeout>;
-  private seen = {
-    lt: '',
-    rt: '',
-    lf: null as string | null,
-    rf: null as string | null,
-    ls: null as string | null,
-    rs: null as string | null,
-    lm: 'editor',
-    rm: 'editor',
-    vm: 'edit',
-    ap: 'left',
-    files: '',
-    ma: true,
-    ig: '',
-  };
-
-  /** Cheap change detection: runs on every render, and only schedules a save when something moved. */
+  /** Schedules a session save when anything it remembers has changed. Runs on every render. */
   ngDoCheck(): void {
-    if (!this.loaded) return; // do not overwrite the stored session before it is restored
-    const l = this.left,
-      r = this.right,
-      seen = this.seen;
-    const files = this.savedFiles.length + ':' + (this.savedFiles[0]?.savedAt ?? '');
-    const ap = this.activePanel === this.right ? 'right' : 'left';
-    if (
-      l.jsonText === seen.lt &&
-      r.jsonText === seen.rt &&
-      l.currentFileId === seen.lf &&
-      r.currentFileId === seen.rf &&
-      l.sourceName === seen.ls &&
-      r.sourceName === seen.rs &&
-      l.mode === seen.lm &&
-      r.mode === seen.rm &&
-      this.viewMode === seen.vm &&
-      ap === seen.ap &&
-      files === seen.files &&
-      this.matchArrays === seen.ma &&
-      this.ignoreText === seen.ig
-    )
-      return;
-    Object.assign(seen, {
-      lt: l.jsonText,
-      rt: r.jsonText,
-      lf: l.currentFileId,
-      rf: r.currentFileId,
-      ls: l.sourceName,
-      rs: r.sourceName,
-      lm: l.mode,
-      rm: r.mode,
-      vm: this.viewMode,
-      ap,
-      files,
-      ma: this.matchArrays,
-      ig: this.ignoreText,
-    });
-    clearTimeout(this.sessionTimer);
-    this.sessionTimer = setTimeout(() => void this.persistSession(), 500);
+    this.session.check();
   }
 
   /** Saves at once when the tab is hidden or closed, so a change made just before is not lost. */
   @HostListener('window:pagehide')
   flushSession(): void {
-    if (!this.loaded) return;
-    clearTimeout(this.sessionTimer);
-    void this.persistSession();
+    this.session.flush();
   }
 
   @HostListener('document:visibilitychange')
@@ -1233,62 +1162,35 @@ export class App implements DoCheck, OnDestroy {
     if (document.visibilityState === 'hidden') this.flushSession();
   }
 
-  private paneSession(panel: PanelState): PaneSession {
-    const file = this.savedFiles.find((f) => f.id === panel.currentFileId);
-    const matchesFile = !!file && file.content === panel.jsonText;
-    const keepText = !matchesFile && panel.jsonText.length <= this.store.maxSessionText;
-    return {
-      text: keepText ? panel.jsonText : null,
-      fileId: panel.currentFileId,
-      sourceName: panel.sourceName,
-      mode: panel.mode,
-    };
+  /** Writes the session without blocking typing. Resolves once it is stored (or the browser refused). */
+  persistSession(): Promise<void> {
+    return this.session.persist();
   }
 
-  /** Writes the session without blocking typing. Resolves once it is stored (or the browser refused). */
-  async persistSession(): Promise<void> {
-    const session: Session = {
-      version: 1,
-      left: this.paneSession(this.left),
-      right: this.paneSession(this.right),
+  private sessionState(): SessionState {
+    return {
+      left: this.left,
+      right: this.right,
       viewMode: this.viewMode,
       active: this.activePanel === this.right ? 'right' : 'left',
       matchArrays: this.matchArrays,
       ignoreText: this.ignoreText,
+      savedFiles: this.savedFiles,
     };
-    try {
-      await this.store.saveSession(session);
-    } catch {
-      /* storage full or unavailable: the session just will not be restored */
-    }
   }
 
-  /** Returns true when a stored session was applied. */
-  private async restoreSession(): Promise<boolean> {
-    let session: Session;
-    try {
-      session = (await this.store.loadSession()) as Session;
-    } catch {
-      return false;
-    }
-    if (session?.version !== 1 || !session.left || !session.right) return false;
-
+  private applySession(session: RestoredSession): void {
     for (const [panel, pane] of [
       [this.left, session.left],
       [this.right, session.right],
     ] as const) {
-      const file = this.savedFiles.find((f) => f.id === pane.fileId);
-      panel.currentFileId = file ? file.id : null;
-      panel.sourceName = typeof pane.sourceName === 'string' ? pane.sourceName : null;
-      panel.mode = PANEL_MODES.includes(pane.mode) ? pane.mode : 'editor';
-      panel.jsonText = typeof pane.text === 'string' ? pane.text : (file?.content ?? '');
+      Object.assign(panel, pane);
       this.parsePanel(panel);
     }
-    this.viewMode = session.viewMode === 'compare' ? 'compare' : 'edit';
+    this.viewMode = session.viewMode;
     this.activePanel = session.active === 'right' ? this.right : this.left;
-    this.matchArrays = session.matchArrays !== false;
-    this.ignoreText = typeof session.ignoreText === 'string' ? session.ignoreText : '';
-    return true;
+    this.matchArrays = session.matchArrays;
+    this.ignoreText = session.ignoreText;
   }
 
   // ── Share links ───────────────────────────────────────────────────────────
