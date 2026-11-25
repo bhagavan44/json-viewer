@@ -26,6 +26,7 @@ Closes #
 - [ ] Unit tests pass (`npx ng test --watch=false`), with a new or updated spec for every util change
 - [ ] The production build succeeds (`npm run build`)
 - [ ] `npm run lint` passes
+- [ ] `npm run format:check` passes (`npm run format` fixes it)
 - [ ] `npm run lint:styles` passes (if a stylesheet changed)
 - [ ] `npm run e2e` passes (if UI behaviour changed)
 - [ ] The README is updated (if a feature, shortcut or limit changed)

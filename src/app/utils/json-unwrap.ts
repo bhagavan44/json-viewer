@@ -36,7 +36,8 @@ export function unwrapAll(value: unknown): { value: unknown; count: number } {
     }
     if (type === 'array') return v.map(visit);
     // fromEntries defines own properties, so a "__proto__" key stays a key
-    if (type === 'object') return Object.fromEntries(Object.entries(v).map(([k, c]) => [k, visit(c)]));
+    if (type === 'object')
+      return Object.fromEntries(Object.entries(v).map(([k, c]) => [k, visit(c)]));
     return v;
   };
   return { value: visit(value), count };
@@ -52,7 +53,10 @@ export function replaceAt(doc: unknown, target: string, update: (value: any) => 
     if (!target.startsWith(path)) return v;
     const type = jsonTypeOf(v);
     if (type === 'array') return v.map((c: any, i: number) => visit(c, childPath(path, i, true)));
-    if (type === 'object') return Object.fromEntries(Object.entries(v).map(([k, c]) => [k, visit(c, childPath(path, k, false))]));
+    if (type === 'object')
+      return Object.fromEntries(
+        Object.entries(v).map(([k, c]) => [k, visit(c, childPath(path, k, false))]),
+      );
     return v;
   };
   return visit(doc, '$');

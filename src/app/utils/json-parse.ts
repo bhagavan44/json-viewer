@@ -24,7 +24,11 @@ export class LosslessNumber {
 /** True when the number's text would change if it went through a double. */
 function needsRaw(source: string): boolean {
   if (/^-?\d+$/.test(source)) return !Number.isSafeInteger(Number(source));
-  const mantissa = source.replace(/^-/, '').replace(/[eE].*$/, '').replace('.', '').replace(/^0+/, '');
+  const mantissa = source
+    .replace(/^-/, '')
+    .replace(/[eE].*$/, '')
+    .replace('.', '')
+    .replace(/^0+/, '');
   return mantissa.length > 15;
 }
 

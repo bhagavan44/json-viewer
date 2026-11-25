@@ -79,12 +79,20 @@
     }
 
     .dice-btn {
-      @include mat.icon-button-overrides((icon-color: var(--text-secondary)));
+      @include mat.icon-button-overrides(
+        (
+          icon-color: var(--text-secondary),
+        )
+      );
       @include center-icon;
       flex-shrink: 0;
 
       &:hover {
-        @include mat.icon-button-overrides((icon-color: var(--accent)));
+        @include mat.icon-button-overrides(
+          (
+            icon-color: var(--accent),
+          )
+        );
       }
     }
   }
@@ -131,7 +139,11 @@
       }
 
       &:hover:not([disabled]) {
-        @include mat.button-overrides((filled-container-color: var(--accent-hover)));
+        @include mat.button-overrides(
+          (
+            filled-container-color: var(--accent-hover),
+          )
+        );
       }
     }
   }

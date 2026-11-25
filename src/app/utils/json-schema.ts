@@ -32,16 +32,32 @@ function infer(samples: unknown[]): JsonSchema {
   const strings: string[] = [];
   const arrays: unknown[][] = [];
   const objects: Record<string, unknown>[] = [];
-  let numbers = 0, integers = 0, booleans = 0, nulls = 0;
+  let numbers = 0,
+    integers = 0,
+    booleans = 0,
+    nulls = 0;
 
   for (const v of samples) {
     switch (jsonTypeOf(v)) {
-      case 'string': strings.push(v as string); break;
-      case 'number': numbers++; if (isInteger(v)) integers++; break;
-      case 'boolean': booleans++; break;
-      case 'null': nulls++; break;
-      case 'array': arrays.push(v as unknown[]); break;
-      case 'object': objects.push(v as Record<string, unknown>); break;
+      case 'string':
+        strings.push(v as string);
+        break;
+      case 'number':
+        numbers++;
+        if (isInteger(v)) integers++;
+        break;
+      case 'boolean':
+        booleans++;
+        break;
+      case 'null':
+        nulls++;
+        break;
+      case 'array':
+        arrays.push(v as unknown[]);
+        break;
+      case 'object':
+        objects.push(v as Record<string, unknown>);
+        break;
     }
   }
 

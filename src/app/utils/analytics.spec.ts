@@ -49,7 +49,11 @@ describe('analytics', () => {
 
   describe('isVercelHost', () => {
     it('matches *.vercel.app hosts, ignoring case', () => {
-      for (const host of ['json-viewer.vercel.app', 'my-fork-git-main.vercel.app', 'A.VERCEL.APP']) {
+      for (const host of [
+        'json-viewer.vercel.app',
+        'my-fork-git-main.vercel.app',
+        'A.VERCEL.APP',
+      ]) {
         expect(isVercelHost(host), host).toBe(true);
       }
     });

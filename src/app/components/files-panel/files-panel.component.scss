@@ -68,7 +68,11 @@
       @include center-icon;
 
       &:hover {
-        @include mat.icon-button-overrides((icon-color: var(--accent)));
+        @include mat.icon-button-overrides(
+          (
+            icon-color: var(--accent),
+          )
+        );
       }
     }
   }

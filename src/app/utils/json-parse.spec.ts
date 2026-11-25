@@ -57,7 +57,9 @@ describe('stringifyJson', () => {
     try {
       expect(JSON.stringify(parseJson(text))).not.toBe(text); // the plain fallback rounds
       expect(stringifyJson(parseJson(text))).toBe(text);
-      expect(stringifyJson(new LosslessNumber('12345678901234567890'))).toBe('12345678901234567890');
+      expect(stringifyJson(new LosslessNumber('12345678901234567890'))).toBe(
+        '12345678901234567890',
+      );
       expect(stringifyJson(parseJson(text), 2)).toContain('"id": 1234567890123456789');
     } finally {
       (JSON as any).rawJSON = rawJSON;

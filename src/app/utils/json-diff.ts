@@ -84,7 +84,15 @@ function sameScalar(a: unknown, b: unknown): boolean {
  * as the tree view; each side's marks use that side's paths.
  */
 export function diffJson(before: any, after: any, options: DiffOptions = {}): DiffResult {
-  const result: DiffResult = { left: {}, right: {}, changes: [], added: 0, removed: 0, changed: 0, arrayKeys: [] };
+  const result: DiffResult = {
+    left: {},
+    right: {},
+    changes: [],
+    added: 0,
+    removed: 0,
+    changed: 0,
+    arrayKeys: [],
+  };
   const keys = new Set<string>();
   const ignoreLeft = options.ignore?.left ?? new Set<string>();
   const ignoreRight = options.ignore?.right ?? new Set<string>();
@@ -105,7 +113,11 @@ export function diffJson(before: any, after: any, options: DiffOptions = {}): Di
     result.left[pa] = 'chg';
     result.right[pb] = 'chg';
     result.changed++;
-    result.changes.push(pa === pb ? { path: pa, kind: 'chg', before: a, after: b } : { path: pa, rightPath: pb, kind: 'chg', before: a, after: b });
+    result.changes.push(
+      pa === pb
+        ? { path: pa, kind: 'chg', before: a, after: b }
+        : { path: pa, rightPath: pb, kind: 'chg', before: a, after: b },
+    );
   };
 
   const walkArraysByKey = (a: any[], b: any[], pa: string, pb: string, key: string): void => {
@@ -130,7 +142,8 @@ export function diffJson(before: any, after: any, options: DiffOptions = {}): Di
     if (ta !== jsonTypeOf(b)) return changed(pa, pb, a, b);
     if (ta === 'object') {
       for (const key of Object.keys(a)) {
-        if (Object.hasOwn(b, key)) walk(a[key], b[key], childPath(pa, key, false), childPath(pb, key, false));
+        if (Object.hasOwn(b, key))
+          walk(a[key], b[key], childPath(pa, key, false), childPath(pb, key, false));
         else removed(childPath(pa, key, false), a[key]);
       }
       for (const key of Object.keys(b)) {

@@ -44,7 +44,8 @@ function checked(result: string): string {
   return result;
 }
 
-const splice = (text: string, start: number, end: number, insert: string) => text.slice(0, start) + insert + text.slice(end);
+const splice = (text: string, start: number, end: number, insert: string) =>
+  text.slice(0, start) + insert + text.slice(end);
 
 /** Replaces the value at `path`. */
 export function setValue(text: string, path: string, value: unknown): string {
@@ -72,18 +73,26 @@ export function deleteAt(text: string, path: string): string {
   // The last member: remove the comma before it (if any) through its end.
   let i = s.keyStart - 1;
   while (i >= 0 && /\s/.test(text[i])) i--;
-  return checked(text[i] === ',' ? splice(text, i, s.end, '') : splice(text, s.keyStart, s.end, ''));
+  return checked(
+    text[i] === ',' ? splice(text, i, s.end, '') : splice(text, s.keyStart, s.end, ''),
+  );
 }
 
 /**
  * Adds a member (`key` given) or an item (`key` null) at the end of the object or
  * array at `parentPath`, following the layout of the existing members.
  */
-export function addChild(text: string, parentPath: string, key: string | null, value: unknown): string {
+export function addChild(
+  text: string,
+  parentPath: string,
+  key: string | null,
+  value: unknown,
+): string {
   const s = span(text, parentPath);
   const open = text[s.start];
   if (open !== '{' && open !== '[') throw new EditError('Only objects and arrays have children');
-  if ((open === '{') !== (key !== null)) throw new EditError(open === '{' ? 'A new member needs a key' : 'Array items have no key');
+  if ((open === '{') !== (key !== null))
+    throw new EditError(open === '{' ? 'A new member needs a key' : 'Array items have no key');
   const close = s.end - 1;
   const inner = text.slice(s.start + 1, close);
   const empty = !inner.trim();
@@ -96,12 +105,16 @@ export function addChild(text: string, parentPath: string, key: string | null, v
     const laidOut = /\n/.test(inner);
     indent = laidOut ? lineIndent(text, last) : '';
     const member = (key !== null ? JSON.stringify(key) + ': ' : '') + render(text, value, indent);
-    return checked(splice(text, last + 1, last + 1, laidOut ? `,\n${indent}${member}` : `, ${member}`));
+    return checked(
+      splice(text, last + 1, last + 1, laidOut ? `,\n${indent}${member}` : `, ${member}`),
+    );
   }
   const parentIndent = lineIndent(text, s.keyStart);
   indent = multiLine ? parentIndent + indentUnit(text) : '';
   const member = (key !== null ? JSON.stringify(key) + ': ' : '') + render(text, value, indent);
-  return checked(splice(text, s.start + 1, close, multiLine ? `\n${indent}${member}\n${parentIndent}` : member));
+  return checked(
+    splice(text, s.start + 1, close, multiLine ? `\n${indent}${member}\n${parentIndent}` : member),
+  );
 }
 
 /** How the text typed into an edit form is read. */

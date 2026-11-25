@@ -13,12 +13,32 @@ export const MASK = '***';
 
 /** Key names (lower-cased, without separators) that hold secrets wherever they appear. */
 const SECRET_PARTS = [
-  'password', 'passwd', 'passphrase', 'secret', 'token', 'apikey', 'accesskey', 'privatekey',
-  'authorization', 'credential', 'cookie', 'sessionid', 'signature',
+  'password',
+  'passwd',
+  'passphrase',
+  'secret',
+  'token',
+  'apikey',
+  'accesskey',
+  'privatekey',
+  'authorization',
+  'credential',
+  'cookie',
+  'sessionid',
+  'signature',
 ];
 /** Key names that are secrets only as the whole name (too short to search for inside others). */
 const SECRET_NAMES = new Set(['pwd', 'pin', 'auth', 'otp', 'cvv', 'cvc', 'cvv2', 'ssn']);
-const PERSONAL_PARTS = ['cardnumber', 'creditcard', 'iban', 'accountnumber', 'routingnumber', 'socialsecurity', 'taxid', 'passportnumber'];
+const PERSONAL_PARTS = [
+  'cardnumber',
+  'creditcard',
+  'iban',
+  'accountnumber',
+  'routingnumber',
+  'socialsecurity',
+  'taxid',
+  'passportnumber',
+];
 
 const EMAIL = /^([^\s@])[^\s@]*(@[^\s@]+\.[^\s@]+)$/;
 const JWT = /^(Bearer\s+)?eyJ[\w-]+\.eyJ[\w-]+\.[\w-]*$/;
@@ -41,7 +61,8 @@ function luhn(digits: string): boolean {
 
 function keyKind(key: string): string | null {
   const k = key.toLowerCase().replace(/[^a-z0-9]/g, '');
-  if (SECRET_NAMES.has(k) || SECRET_PARTS.some((p) => k.includes(p))) return 'passwords and secrets';
+  if (SECRET_NAMES.has(k) || SECRET_PARTS.some((p) => k.includes(p)))
+    return 'passwords and secrets';
   if (PERSONAL_PARTS.some((p) => k.includes(p))) return 'account and card numbers';
   return null;
 }
@@ -55,7 +76,8 @@ function maskString(s: string): { masked: string; kind: string } | null {
   if (email) return { masked: `${email[1]}${MASK}${email[2]}`, kind: 'email addresses' };
   if (CARD.test(t)) {
     const digits = t.replace(/\D/g, '');
-    if (luhn(digits)) return { masked: `${MASK} ${digits.slice(-4)}`, kind: 'account and card numbers' };
+    if (luhn(digits))
+      return { masked: `${MASK} ${digits.slice(-4)}`, kind: 'account and card numbers' };
   }
   return null;
 }
@@ -78,7 +100,8 @@ export function redact(value: unknown): RedactResult {
   const maskAll = (v: any, kind: string): any => {
     const t = jsonTypeOf(v);
     if (t === 'array') return v.map((x: any) => maskAll(x, kind));
-    if (t === 'object') return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, maskAll(x, kind)]));
+    if (t === 'object')
+      return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, maskAll(x, kind)]));
     if (v === null || v === '') return v; // nothing to hide
     note(kind);
     return MASK;

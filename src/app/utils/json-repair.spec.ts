@@ -1,4 +1,11 @@
-import { decodeBase64Json, decodeJwt, findTextFix, parseJsonLines, repairJson, toJsonLines } from './json-repair';
+import {
+  decodeBase64Json,
+  decodeJwt,
+  findTextFix,
+  parseJsonLines,
+  repairJson,
+  toJsonLines,
+} from './json-repair';
 
 const repaired = (text: string) => {
   const r = repairJson(text);
@@ -49,7 +56,14 @@ describe('repairJson', () => {
 
   it('returns null for valid JSON and for text it cannot repair', () => {
     expect(repairJson('{"a": 1}')).toBeNull();
-    for (const bad of ['{"a": ', '{"a": 1]', 'hello world', '{"a": "unterminated}', '[1, 2', '{} {}']) {
+    for (const bad of [
+      '{"a": ',
+      '{"a": 1]',
+      'hello world',
+      '{"a": "unterminated}',
+      '[1, 2',
+      '{} {}',
+    ]) {
       expect(repairJson(bad)).toBeNull();
     }
   });
@@ -71,13 +85,17 @@ describe('JSON Lines', () => {
 });
 
 describe('decodeJwt', () => {
-  const b64url = (o: unknown) => btoa(JSON.stringify(o)).replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
+  const b64url = (o: unknown) =>
+    btoa(JSON.stringify(o)).replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
   const token = `${b64url({ alg: 'HS256', typ: 'JWT' })}.${b64url({ sub: 'u1', exp: 1700000000 })}.c2ln`;
 
   it('decodes header and payload and shows times as dates', () => {
     // btoa needs Latin-1, so encode the UTF-8 payload by hand.
     const utf8 = (o: unknown) =>
-      btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(o)))).replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
+      btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(o))))
+        .replace(/=+$/, '')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_');
     const t = `${b64url({ alg: 'HS256' })}.${utf8({ name: 'Zoë', exp: 1700000000 })}.sig`;
     expect(decodeJwt('Bearer ' + t)).toEqual({
       header: { alg: 'HS256' },
@@ -125,7 +143,9 @@ describe('findTextFix', () => {
 
   it('describes a repair and returns parseable JSON', () => {
     const fix = findTextFix("{a: 'x', // note\n}")!;
-    expect(fix.detail).toBe('Repair: Quoted keys, replaced single quotes, removed comments, removed trailing commas.'); // in the order first applied
+    expect(fix.detail).toBe(
+      'Repair: Quoted keys, replaced single quotes, removed comments, removed trailing commas.',
+    ); // in the order first applied
     expect(JSON.parse(fix.text)).toEqual({ a: 'x' });
   });
 });

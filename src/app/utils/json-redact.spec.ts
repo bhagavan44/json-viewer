@@ -49,7 +49,9 @@ describe('redact', () => {
   });
 
   it('treats account numbers under their keys as personal data', () => {
-    expect(redact({ iban: 'DE89370400440532013000', bank: { accountNumber: 12345678 } }).value).toEqual({
+    expect(
+      redact({ iban: 'DE89370400440532013000', bank: { accountNumber: 12345678 } }).value,
+    ).toEqual({
       iban: MASK,
       bank: { accountNumber: MASK },
     });
@@ -67,6 +69,8 @@ describe('redact', () => {
   });
 
   it('describes what it hid', () => {
-    expect(describeRedaction(redact({ password: 'x', email: 'a@b.co' }))).toBe('2 values (passwords and secrets, email addresses)');
+    expect(describeRedaction(redact({ password: 'x', email: 'a@b.co' }))).toBe(
+      '2 values (passwords and secrets, email addresses)',
+    );
   });
 });

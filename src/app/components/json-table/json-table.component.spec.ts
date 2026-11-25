@@ -30,10 +30,16 @@ describe('JsonTableComponent', () => {
 
   it('shows the shallowest array and renders its rows', () => {
     const { fixture, table } = create();
-    expect(table.tables.map((t) => t.path)).toEqual(['$.customers', '$.orders', '$.orders[*].lines']);
+    expect(table.tables.map((t) => t.path)).toEqual([
+      '$.customers',
+      '$.orders',
+      '$.orders[*].lines',
+    ]);
     expect(table.table!.path).toBe('$.customers');
     expect(table.columns).toEqual(['id', 'name', 'city']);
-    const cells = Array.from(fixture.nativeElement.querySelectorAll('tbody tr:first-child td')).map((td: any) => td.textContent.trim());
+    const cells = Array.from(fixture.nativeElement.querySelectorAll('tbody tr:first-child td')).map(
+      (td: any) => td.textContent.trim(),
+    );
     expect(cells).toEqual(['0', '3', 'Sam', 'Austin']);
   });
 

@@ -1,9 +1,15 @@
-<div *ngIf="closing" class="closing-row" aria-hidden="true" [style.padding-left.px]="depth * 20 + 20">
+<div
+  *ngIf="closing"
+  class="closing-row"
+  aria-hidden="true"
+  [style.padding-left.px]="depth * 20 + 20"
+>
   <span class="bracket">{{ closeBracket }}</span>
 </div>
 
 <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -- keyboard access is handled by the tree (arrow keys, Enter) -->
-<div *ngIf="!closing"
+<div
+  *ngIf="!closing"
   class="node-row"
   [class.leaf]="!isContainer"
   role="treeitem"
@@ -19,8 +25,8 @@
   [class.mark-add]="node.mark === 'add'"
   [class.mark-del]="node.mark === 'del'"
   [class.mark-chg]="node.mark === 'chg'"
-  (click)="onRowClick()">
-
+  (click)="onRowClick()"
+>
   <span *ngIf="isContainer" class="toggle-btn" [class.expanded]="!node.collapsed">
     <mat-icon>chevron_right</mat-icon>
   </span>
@@ -35,10 +41,27 @@
     <span *ngIf="node.collapsed" class="item-count">{{ node.size }}</span>
     <span *ngIf="!node.collapsed" class="bracket">{{ openBracket }}</span>
   </ng-container>
-  <span *ngIf="!isContainer" class="node-value" [ngClass]="'type-' + node.type" [innerHTML]="valueHtml"></span>
-  <button type="button" *ngIf="node.embedsJson" class="json-chip" tabindex="-1"
-    title="This string holds JSON. Click to unwrap it." (click)="onUnwrapClick($event)">JSON</button>
+  <span
+    *ngIf="!isContainer"
+    class="node-value"
+    [ngClass]="'type-' + node.type"
+    [innerHTML]="valueHtml"
+  ></span>
+  <button
+    type="button"
+    *ngIf="node.embedsJson"
+    class="json-chip"
+    tabindex="-1"
+    title="This string holds JSON. Click to unwrap it."
+    (click)="onUnwrapClick($event)"
+  >
+    JSON
+  </button>
 
   <span *ngIf="node.markOwn" class="diff-gutter">{{ markSymbol }}</span>
-  <span *ngIf="!node.markOwn && isContainer && node.hasChange" class="change-dot" title="Contains changes"></span>
+  <span
+    *ngIf="!node.markOwn && isContainer && node.hasChange"
+    class="change-dot"
+    title="Contains changes"
+  ></span>
 </div>

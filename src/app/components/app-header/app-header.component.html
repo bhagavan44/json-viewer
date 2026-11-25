@@ -1,21 +1,41 @@
 <mat-toolbar class="app-header">
   <div class="header-logo">
-    <img class="logo-icon" src="favicon.svg" alt="" width="28" height="28">
+    <img class="logo-icon" src="favicon.svg" alt="" width="28" height="28" />
     <span class="app-title">JSON Viewer</span>
-    <a class="app-version" [href]="releaseUrl" target="_blank" rel="noopener"
-      [matTooltip]="'Release notes for v' + version">v{{ version }}</a>
+    <a
+      class="app-version"
+      [href]="releaseUrl"
+      target="_blank"
+      rel="noopener"
+      [matTooltip]="'Release notes for v' + version"
+      >v{{ version }}</a
+    >
   </div>
   <div class="view-seg" role="group" aria-label="View mode">
-    <button type="button" [class.on]="viewMode === 'edit'" [attr.aria-pressed]="viewMode === 'edit'" (click)="viewModeChange.emit('edit')">
+    <button
+      type="button"
+      [class.on]="viewMode === 'edit'"
+      [attr.aria-pressed]="viewMode === 'edit'"
+      (click)="viewModeChange.emit('edit')"
+    >
       <mat-icon>view_column</mat-icon><span>Workspace</span>
     </button>
-    <button type="button" [class.on]="viewMode === 'compare'" [attr.aria-pressed]="viewMode === 'compare'" (click)="viewModeChange.emit('compare')">
+    <button
+      type="button"
+      [class.on]="viewMode === 'compare'"
+      [attr.aria-pressed]="viewMode === 'compare'"
+      (click)="viewModeChange.emit('compare')"
+    >
       <mat-icon>compare_arrows</mat-icon><span>Compare</span>
     </button>
   </div>
   <span class="flex-spacer"></span>
   <div class="header-actions">
-    <button mat-stroked-button [matMenuTriggerFor]="shareMenu" matTooltip="Copy a link that opens both panes">
+    <button
+      mat-stroked-button
+      [matMenuTriggerFor]="shareMenu"
+      matTooltip="Copy a link that opens both panes"
+    >
       <mat-icon>link</mat-icon>
       <span class="btn-label">Share</span>
     </button>
@@ -27,25 +47,35 @@
         <mat-icon>visibility_off</mat-icon><span>Copy link, hiding sensitive values</span>
       </button>
     </mat-menu>
-    <button mat-stroked-button (click)="openPalette.emit()" matTooltip="Search every action (Ctrl/Cmd+K)">
+    <button
+      mat-stroked-button
+      (click)="openPalette.emit()"
+      matTooltip="Search every action (Ctrl/Cmd+K)"
+    >
       <mat-icon>bolt</mat-icon>
       <span class="btn-label">Actions</span>
     </button>
-    <button mat-stroked-button
+    <button
+      mat-stroked-button
       (click)="toggleFiles.emit()"
       matTooltip="Show or hide saved files"
-      [class.active-btn]="filesOpen">
+      [class.active-btn]="filesOpen"
+    >
       <mat-icon
         [matBadge]="fileCount"
         [matBadgeHidden]="fileCount === 0"
         matBadgeSize="small"
-        matBadgeColor="accent">folder_open</mat-icon>
+        matBadgeColor="accent"
+        >folder_open</mat-icon
+      >
       <span class="btn-label">Files</span>
     </button>
-    <button mat-icon-button
+    <button
+      mat-icon-button
       (click)="toggleTheme.emit()"
       [matTooltip]="dark ? 'Switch to light theme' : 'Switch to dark theme'"
-      class="theme-toggle">
+      class="theme-toggle"
+    >
       <mat-icon>{{ dark ? 'light_mode' : 'dark_mode' }}</mat-icon>
     </button>
   </div>

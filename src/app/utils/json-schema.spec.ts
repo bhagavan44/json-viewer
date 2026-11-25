@@ -20,7 +20,13 @@ describe('toJsonSchema', () => {
   });
 
   it('merges array elements: optional keys, mixed types and widened numbers', () => {
-    const schema: any = toJsonSchema({ rows: [{ id: 1, note: 'x', v: 1 }, { id: 2, v: 2.5 }, { id: 3, v: null }] });
+    const schema: any = toJsonSchema({
+      rows: [
+        { id: 1, note: 'x', v: 1 },
+        { id: 2, v: 2.5 },
+        { id: 3, v: null },
+      ],
+    });
     const row = schema.properties.rows.items;
     expect(schema.properties.rows.type).toBe('array');
     expect(row.required).toEqual(['id', 'v']); // "note" is missing from some rows
@@ -44,18 +50,30 @@ describe('toJsonSchema', () => {
       mixed: ['a@b.io', 'not an email'],
     });
     const p = schema.properties;
-    expect([p.when.format, p.day.format, p.id.format, p.mail.format, p.site.format]).toEqual(['date-time', 'date', 'uuid', 'email', 'uri']);
+    expect([p.when.format, p.day.format, p.id.format, p.mail.format, p.site.format]).toEqual([
+      'date-time',
+      'date',
+      'uuid',
+      'email',
+      'uri',
+    ]);
     expect(p.mixed.items.format).toBeUndefined();
   });
 
   it('treats 64-bit IDs as integers and long decimals as numbers', () => {
-    const schema: any = toJsonSchema(parseJson('{"id": 1234567890123456789, "price": 0.12345678901234567890}'));
+    const schema: any = toJsonSchema(
+      parseJson('{"id": 1234567890123456789, "price": 0.12345678901234567890}'),
+    );
     expect(schema.properties.id.type).toBe('integer');
     expect(schema.properties.price.type).toBe('number');
   });
 
   it('describes a non-object root', () => {
-    expect(toJsonSchema([1, 2])).toEqual({ $schema: DRAFT, type: 'array', items: { type: 'integer' } });
+    expect(toJsonSchema([1, 2])).toEqual({
+      $schema: DRAFT,
+      type: 'array',
+      items: { type: 'integer' },
+    });
     expect(toJsonSchema('x')).toEqual({ $schema: DRAFT, type: 'string' });
   });
 });

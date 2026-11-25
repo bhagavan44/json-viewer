@@ -10,23 +10,56 @@
     (keydown.escape)="clearQuery()"
     placeholder="Search, or a JSONPath such as $.items[?(@.qty > 1)].sku"
     title="Type text to search keys and values. Start with $ to run a JSONPath: $.a.b  $..key  $.list[*]  $.list[0:3]  $.list[?(@.n > 1 && @.ok)]"
-    aria-label="Search keys and values, or run a JSONPath">
+    aria-label="Search keys and values, or run a JSONPath"
+  />
   <span class="tb-count" [class.bad]="queryError" *ngIf="ctx.active" [title]="queryError || ''">
-    {{ queryError ? 'Invalid path' : matchPaths.length ? (activeIdx + 1) + ' / ' + matchPaths.length : 'No matches' }}
+    {{
+      queryError
+        ? 'Invalid path'
+        : matchPaths.length
+          ? activeIdx + 1 + ' / ' + matchPaths.length
+          : 'No matches'
+    }}
   </span>
-  <button type="button" class="tb-btn" (click)="step(-1)" [disabled]="!matchPaths.length"
-    matTooltip="Previous match (Shift+Enter)" aria-label="Previous match">
+  <button
+    type="button"
+    class="tb-btn"
+    (click)="step(-1)"
+    [disabled]="!matchPaths.length"
+    matTooltip="Previous match (Shift+Enter)"
+    aria-label="Previous match"
+  >
     <mat-icon>keyboard_arrow_up</mat-icon>
   </button>
-  <button type="button" class="tb-btn" (click)="step(1)" [disabled]="!matchPaths.length"
-    matTooltip="Next match (Enter)" aria-label="Next match">
+  <button
+    type="button"
+    class="tb-btn"
+    (click)="step(1)"
+    [disabled]="!matchPaths.length"
+    matTooltip="Next match (Enter)"
+    aria-label="Next match"
+  >
     <mat-icon>keyboard_arrow_down</mat-icon>
   </button>
-  <button type="button" class="tb-btn" [class.on]="filterMode" (click)="toggleFilter()"
-    matTooltip="Show only matching nodes" aria-label="Filter to matching nodes" [attr.aria-pressed]="filterMode">
+  <button
+    type="button"
+    class="tb-btn"
+    [class.on]="filterMode"
+    (click)="toggleFilter()"
+    matTooltip="Show only matching nodes"
+    aria-label="Filter to matching nodes"
+    [attr.aria-pressed]="filterMode"
+  >
     <mat-icon>filter_list</mat-icon>
   </button>
-  <button type="button" class="tb-btn" *ngIf="query" (click)="clearQuery()" matTooltip="Clear search (Esc)" aria-label="Clear search">
+  <button
+    type="button"
+    class="tb-btn"
+    *ngIf="query"
+    (click)="clearQuery()"
+    matTooltip="Clear search (Esc)"
+    aria-label="Clear search"
+  >
     <mat-icon>close</mat-icon>
   </button>
 </div>
@@ -57,11 +90,9 @@
     [itemSize]="rowHeight"
     minBufferPx="520"
     maxBufferPx="1040"
-    (keydown)="onKeydown($event)">
-    <app-json-tree-node
-      *cdkVirtualFor="let row of rows; trackBy: trackRow"
-      [row]="row"
-      [ctx]="ctx">
+    (keydown)="onKeydown($event)"
+  >
+    <app-json-tree-node *cdkVirtualFor="let row of rows; trackBy: trackRow" [row]="row" [ctx]="ctx">
     </app-json-tree-node>
   </cdk-virtual-scroll-viewport>
   <ng-template #noRows>
@@ -74,21 +105,52 @@
     <span class="insp-path" [title]="selected.path">{{ selected.path }}</span>
     <span class="insp-meta">{{ selectedMeta }}</span>
     <span class="insp-spacer"></span>
-    <button type="button" class="insp-btn" *ngIf="selectedEmbedsJson" (click)="unwrapSelected()"
-      matTooltip="Replace this string with the JSON it contains">
+    <button
+      type="button"
+      class="insp-btn"
+      *ngIf="selectedEmbedsJson"
+      (click)="unwrapSelected()"
+      matTooltip="Replace this string with the JSON it contains"
+    >
       <mat-icon>data_object</mat-icon>Unwrap JSON
     </button>
-    <button type="button" class="insp-btn icon" (click)="startEdit()" matTooltip="Edit value (F2)" aria-label="Edit value">
+    <button
+      type="button"
+      class="insp-btn icon"
+      (click)="startEdit()"
+      matTooltip="Edit value (F2)"
+      aria-label="Edit value"
+    >
       <mat-icon>edit</mat-icon>
     </button>
-    <button type="button" class="insp-btn icon" *ngIf="canRename" (click)="startRename()" matTooltip="Rename key" aria-label="Rename key">
+    <button
+      type="button"
+      class="insp-btn icon"
+      *ngIf="canRename"
+      (click)="startRename()"
+      matTooltip="Rename key"
+      aria-label="Rename key"
+    >
       <mat-icon>drive_file_rename_outline</mat-icon>
     </button>
-    <button type="button" class="insp-btn icon" *ngIf="canAdd" (click)="startAdd()"
-      [matTooltip]="selected.type === 'object' ? 'Add a member' : 'Add an item'" [attr.aria-label]="selected.type === 'object' ? 'Add a member' : 'Add an item'">
+    <button
+      type="button"
+      class="insp-btn icon"
+      *ngIf="canAdd"
+      (click)="startAdd()"
+      [matTooltip]="selected.type === 'object' ? 'Add a member' : 'Add an item'"
+      [attr.aria-label]="selected.type === 'object' ? 'Add a member' : 'Add an item'"
+    >
       <mat-icon>add</mat-icon>
     </button>
-    <button type="button" class="insp-btn icon danger" *ngIf="canDelete" (click)="deleteSelected()" matTooltip="Delete (Del)" aria-label="Delete">
+    <button
+      type="button"
+      class="insp-btn icon danger"
+      *ngIf="canDelete"
+      (click)="deleteSelected()"
+      matTooltip="Delete (Del)"
+      aria-label="Delete"
+    >
       <mat-icon>delete_outline</mat-icon>
     </button>
     <button type="button" class="insp-btn" (click)="copyPath()">
@@ -101,19 +163,68 @@
 
   <ng-template #editForm>
     <form class="edit-form" (ngSubmit)="applyForm()" (keydown.escape)="cancelForm()">
-      <span class="form-label">{{ form!.mode === 'rename' ? 'Rename' : form!.mode === 'add' ? (selected.type === 'object' ? 'Add member' : 'Add item') : 'Edit' }}</span>
-      <input #formField *ngIf="form!.mode === 'rename' || (form!.mode === 'add' && selected.type === 'object')"
-        class="form-input key" name="key" [(ngModel)]="form!.key" placeholder="key" aria-label="Key" (input)="form!.error = null">
+      <span class="form-label">{{
+        form!.mode === 'rename'
+          ? 'Rename'
+          : form!.mode === 'add'
+            ? selected.type === 'object'
+              ? 'Add member'
+              : 'Add item'
+            : 'Edit'
+      }}</span>
+      <input
+        #formField
+        *ngIf="form!.mode === 'rename' || (form!.mode === 'add' && selected.type === 'object')"
+        class="form-input key"
+        name="key"
+        [(ngModel)]="form!.key"
+        placeholder="key"
+        aria-label="Key"
+        (input)="form!.error = null"
+      />
       <ng-container *ngIf="form!.mode !== 'rename'">
-        <select class="form-input type" name="type" [(ngModel)]="form!.type" aria-label="Type" (change)="form!.error = null">
-          <option *ngFor="let t of inputTypes" [value]="t">{{ t === 'json' ? 'object / array' : t }}</option>
+        <select
+          class="form-input type"
+          name="type"
+          [(ngModel)]="form!.type"
+          aria-label="Type"
+          (change)="form!.error = null"
+        >
+          <option *ngFor="let t of inputTypes" [value]="t">
+            {{ t === 'json' ? 'object / array' : t }}
+          </option>
         </select>
-        <input #formField *ngIf="form!.mode === 'edit' && form!.type !== 'null'" class="form-input value" name="text"
-          [(ngModel)]="form!.text" aria-label="Value" (input)="form!.error = null"
-          [placeholder]="form!.type === 'json' ? '{&quot;a&quot;: 1}' : form!.type === 'boolean' ? 'true or false' : ''">
-        <input *ngIf="form!.mode === 'add' && form!.type !== 'null'" class="form-input value" name="text"
-          [(ngModel)]="form!.text" aria-label="Value" (input)="form!.error = null"
-          [placeholder]="form!.type === 'json' ? '{&quot;a&quot;: 1}' : form!.type === 'boolean' ? 'true or false' : 'value'">
+        <input
+          #formField
+          *ngIf="form!.mode === 'edit' && form!.type !== 'null'"
+          class="form-input value"
+          name="text"
+          [(ngModel)]="form!.text"
+          aria-label="Value"
+          (input)="form!.error = null"
+          [placeholder]="
+            form!.type === 'json'
+              ? '{&quot;a&quot;: 1}'
+              : form!.type === 'boolean'
+                ? 'true or false'
+                : ''
+          "
+        />
+        <input
+          *ngIf="form!.mode === 'add' && form!.type !== 'null'"
+          class="form-input value"
+          name="text"
+          [(ngModel)]="form!.text"
+          aria-label="Value"
+          (input)="form!.error = null"
+          [placeholder]="
+            form!.type === 'json'
+              ? '{&quot;a&quot;: 1}'
+              : form!.type === 'boolean'
+                ? 'true or false'
+                : 'value'
+          "
+        />
       </ng-container>
       <span class="form-error" *ngIf="form!.error" role="alert">{{ form!.error }}</span>
       <span class="insp-spacer" *ngIf="form!.mode === 'rename' || form!.type === 'null'"></span>

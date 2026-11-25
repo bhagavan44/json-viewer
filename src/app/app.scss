@@ -364,9 +364,15 @@
       @include icon-size(12px);
     }
 
-    &.valid  { color: var(--color-success); }
-    &.invalid { color: var(--color-error); }
-    &.empty  { color: #8090a8; }
+    &.valid {
+      color: var(--color-success);
+    }
+    &.invalid {
+      color: var(--color-error);
+    }
+    &.empty {
+      color: #8090a8;
+    }
   }
 
   .fix-btn {
@@ -516,9 +522,15 @@
       word-break: break-all;
       font-weight: 600;
 
-      &.k-add { color: var(--diff-add); }
-      &.k-del { color: var(--diff-del); }
-      &.k-chg { color: var(--diff-chg); }
+      &.k-add {
+        color: var(--diff-add);
+      }
+      &.k-del {
+        color: var(--diff-del);
+      }
+      &.k-chg {
+        color: var(--diff-chg);
+      }
 
       .moved {
         font-weight: 400;
@@ -530,8 +542,13 @@
       color: var(--text-secondary);
       word-break: break-all;
 
-      s { color: var(--diff-del); }
-      b { color: var(--diff-add); font-weight: 500; }
+      s {
+        color: var(--diff-del);
+      }
+      b {
+        color: var(--diff-add);
+        font-weight: 500;
+      }
     }
   }
 

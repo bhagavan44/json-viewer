@@ -34,7 +34,8 @@ export function formatBytes(bytes: number): string {
 export function summarizeValue(value: any, max = 36): string {
   const type = jsonTypeOf(value);
   if (type === 'array') return `[${value.length} item${value.length === 1 ? '' : 's'}]`;
-  if (type === 'object') return `{${Object.keys(value).length} key${Object.keys(value).length === 1 ? '' : 's'}}`;
+  if (type === 'object')
+    return `{${Object.keys(value).length} key${Object.keys(value).length === 1 ? '' : 's'}}`;
   const text = stringifyJson(value);
   return text.length > max ? text.slice(0, max - 1) + '…' : text;
 }

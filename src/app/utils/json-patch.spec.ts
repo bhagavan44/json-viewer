@@ -5,7 +5,10 @@ import { PatchOp, jsonPatch } from './json-patch';
 function apply(doc: any, ops: PatchOp[]): any {
   doc = structuredClone(doc);
   for (const op of ops) {
-    const keys = op.path.split('/').slice(1).map((k) => k.replace(/~1/g, '/').replace(/~0/g, '~'));
+    const keys = op.path
+      .split('/')
+      .slice(1)
+      .map((k) => k.replace(/~1/g, '/').replace(/~0/g, '~'));
     if (!keys.length) {
       doc = (op as any).value;
       continue;
@@ -40,7 +43,8 @@ describe('jsonPatch', () => {
       [{ a: { b: null } }, { a: { b: { c: 1 } } }],
       [1, { whole: 'replaced' }],
     ];
-    for (const [before, after] of cases) expect(apply(before, jsonPatch(before, after))).toEqual(after);
+    for (const [before, after] of cases)
+      expect(apply(before, jsonPatch(before, after))).toEqual(after);
   });
 
   it('is empty for equal documents, ignoring key order', () => {
@@ -49,9 +53,13 @@ describe('jsonPatch', () => {
 
   it('leaves ignored paths alone', () => {
     const ignore = new Set(['$.updatedAt', '$.items[0].stamp']);
-    expect(jsonPatch({ updatedAt: 1, items: [{ stamp: 1, q: 1 }] }, { updatedAt: 2, items: [{ stamp: 2, q: 2 }] }, ignore)).toEqual([
-      { op: 'replace', path: '/items/0/q', value: 2 },
-    ]);
+    expect(
+      jsonPatch(
+        { updatedAt: 1, items: [{ stamp: 1, q: 1 }] },
+        { updatedAt: 2, items: [{ stamp: 2, q: 2 }] },
+        ignore,
+      ),
+    ).toEqual([{ op: 'replace', path: '/items/0/q', value: 2 }]);
   });
 
   it('keeps big numbers exact', () => {

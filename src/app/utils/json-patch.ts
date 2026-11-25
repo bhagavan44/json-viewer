@@ -21,7 +21,11 @@ function sameScalar(a: unknown, b: unknown): boolean {
  * first and new ones appended, so every index is valid when its operation runs.
  * Values at a tree path in `ignore` (e.g. timestamps) are left alone.
  */
-export function jsonPatch(before: unknown, after: unknown, ignore: ReadonlySet<string> = new Set()): PatchOp[] {
+export function jsonPatch(
+  before: unknown,
+  after: unknown,
+  ignore: ReadonlySet<string> = new Set(),
+): PatchOp[] {
   const ops: PatchOp[] = [];
   const walk = (a: any, b: any, pointer: string, path: string): void => {
     if (ignore.has(path)) return;
@@ -42,9 +46,12 @@ export function jsonPatch(before: unknown, after: unknown, ignore: ReadonlySet<s
       }
     } else if (ta === 'array') {
       const common = Math.min(a.length, b.length);
-      for (let i = 0; i < common; i++) walk(a[i], b[i], `${pointer}/${i}`, childPath(path, i, true));
-      for (let i = a.length - 1; i >= b.length; i--) ops.push({ op: 'remove', path: `${pointer}/${i}` });
-      for (let i = a.length; i < b.length; i++) ops.push({ op: 'add', path: `${pointer}/${i}`, value: b[i] });
+      for (let i = 0; i < common; i++)
+        walk(a[i], b[i], `${pointer}/${i}`, childPath(path, i, true));
+      for (let i = a.length - 1; i >= b.length; i--)
+        ops.push({ op: 'remove', path: `${pointer}/${i}` });
+      for (let i = a.length; i < b.length; i++)
+        ops.push({ op: 'add', path: `${pointer}/${i}`, value: b[i] });
     } else if (!sameScalar(a, b)) {
       ops.push({ op: 'replace', path: pointer, value: b });
     }

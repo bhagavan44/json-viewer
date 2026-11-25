@@ -11,7 +11,6 @@ if (!isDevMode()) {
   startAnalytics();
 }
 
-platformBrowser().bootstrapModule(AppModule, {
-  
-})
-  .catch(err => console.error(err));
+platformBrowser()
+  .bootstrapModule(AppModule, {})
+  .catch((err) => console.error(err));

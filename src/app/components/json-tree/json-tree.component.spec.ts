@@ -39,7 +39,16 @@ describe('JsonTreeComponent', () => {
     const user = tree.rows.find((r) => r.node.key === 'user')!.node;
 
     tree.ctx.toggle(user);
-    expect(labels(tree)).toEqual(['$@0', 'id@1', 'user@1', 'name@2', 'tags@2', '}', 'items@1', '}']);
+    expect(labels(tree)).toEqual([
+      '$@0',
+      'id@1',
+      'user@1',
+      'name@2',
+      'tags@2',
+      '}',
+      'items@1',
+      '}',
+    ]);
 
     tree.ctx.toggle(user);
     expect(tree.rows).toHaveLength(5);
@@ -164,7 +173,8 @@ describe('JsonTreeComponent', () => {
 
   it('can mark only the node itself, for schema errors', () => {
     const { tree } = create({ diffMarks: { $: 'del', '$.user.name': 'del' }, inheritMarks: false });
-    const marked = (key: string) => tree.rows.find((r) => !r.closing && r.node.key === key)!.node.mark;
+    const marked = (key: string) =>
+      tree.rows.find((r) => !r.closing && r.node.key === key)!.node.mark;
     expect(tree.rootNodes[0].mark).toBe('del');
     expect(marked('id')).toBeNull(); // not painted by the root's mark
     expect(tree.rootNodes[0].children[1].hasChange).toBe(true); // "user" leads to an error, so it opens

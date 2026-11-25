@@ -19,12 +19,13 @@ npm test                        # unit tests (Vitest, watch mode)
 npx ng test --watch=false       # unit tests once, as CI runs them
 npm run lint                    # ESLint (angular-eslint) over src/**/*.ts and templates
 npm run lint:styles             # Stylelint over src/**/*.scss
+npm run format:check            # Prettier check (npm run format fixes it)
 npm run e2e                     # end-to-end tests (Playwright; `npx playwright install chromium` once)
 ```
 
-Before calling a task done, run the tests, `npm run lint` and the production build, and
-`npm run lint:styles` if you changed a stylesheet. Run `npm run e2e` too if you changed UI behaviour.
-CI runs the lint, the style lint, the unit tests and the build on every PR, plus the end-to-end tests in a separate job.
+Before calling a task done, run the tests, `npm run lint`, `npm run format:check` and the production
+build, and `npm run lint:styles` if you changed a stylesheet. Run `npm run e2e` too if you changed UI behaviour.
+CI runs the lint, the style lint, the format check, the unit tests and the build on every PR, plus the end-to-end tests in a separate job.
 
 The build prints a bundle-size budget warning for the initial bundle (Monaco). It is expected today
 and is not a failure; don't treat it as a regression unless the build errors. A component style
@@ -43,8 +44,7 @@ budget warning (over 12 kB) is new, so split the stylesheet into a child compone
 - TypeScript is `strict`, with `noImplicitOverride`, `noImplicitReturns` and
   `noPropertyAccessFromIndexSignature`. Templates are strictly type-checked.
 - Formatting follows `.prettierrc` (100 columns, single quotes) and `.editorconfig` (2 spaces, final
-  newline, no trailing whitespace). Some existing files aren't fully formatted, so don't reformat code you aren't
-  changing.
+  newline, no trailing whitespace). CI fails on unformatted code, so run `npm run format` before committing.
 - **Styles:** use the tokens in `src/styles.scss` (`--accent`, `rgba(var(--accent-rgb), …)`,
   `--accent-hover`, `--color-error` / `-success` / `-warning`, `--font-mono`) and the theme
   colours on `.app-container` in `app.scss`, not raw hex values or `var()` fallbacks. Shared

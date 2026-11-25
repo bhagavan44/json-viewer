@@ -7,7 +7,12 @@ import { LosslessNumber } from './utils/json-parse';
 import { JsonWorkerMessage, handleJsonRequest } from './utils/json-worker-handler';
 import { SHARE_HASH_PREFIX, encodeShare } from './utils/share-link';
 
-const file = (id: string, name: string, content: string): SavedFile => ({ id, name, content, savedAt: Date.now() });
+const file = (id: string, name: string, content: string): SavedFile => ({
+  id,
+  name,
+  content,
+  savedAt: Date.now(),
+});
 
 describe('App', () => {
   beforeEach(async () => {
@@ -45,13 +50,16 @@ describe('App', () => {
 
   it('searches saved files by name and by content', async () => {
     const app = await create();
-    app.savedFiles = [file('1', 'orders', '{"sku":"KB-114"}'), file('2', 'users', '{"name":"Priya"}')];
+    app.savedFiles = [
+      file('1', 'orders', '{"sku":"KB-114"}'),
+      file('2', 'users', '{"name":"Priya"}'),
+    ];
 
     app.fileSearchQuery = 'order';
-    expect(app.filteredFiles.map(f => f.id)).toEqual(['1']);
+    expect(app.filteredFiles.map((f) => f.id)).toEqual(['1']);
 
     app.fileSearchQuery = 'priya';
-    expect(app.filteredFiles.map(f => f.id)).toEqual(['2']);
+    expect(app.filteredFiles.map((f) => f.id)).toEqual(['2']);
   });
 
   it('computes a diff only when both panes hold valid JSON', async () => {
@@ -70,11 +78,14 @@ describe('App', () => {
   it('matches array items by key by default, and by index when turned off', async () => {
     const app = await create();
     app.onTextChange('{"lines":[{"sku":"A","qty":1},{"sku":"B","qty":2}]}', app.left);
-    app.onTextChange('{"lines":[{"sku":"NEW","qty":5},{"sku":"A","qty":1},{"sku":"B","qty":3}]}', app.right);
+    app.onTextChange(
+      '{"lines":[{"sku":"NEW","qty":5},{"sku":"A","qty":1},{"sku":"B","qty":3}]}',
+      app.right,
+    );
 
     const byKey = app.diff!;
     expect(byKey.arrayKeys).toEqual(['sku']);
-    expect(byKey.changes.map(c => [c.kind, c.path, c.rightPath])).toEqual([
+    expect(byKey.changes.map((c) => [c.kind, c.path, c.rightPath])).toEqual([
       ['chg', '$.lines[1].qty', '$.lines[2].qty'],
       ['add', '$.lines[0]', undefined],
     ]);
@@ -137,14 +148,14 @@ describe('App', () => {
     app.onTextChange('{"b":2,"a":1}', app.left);
 
     app.openPalette();
-    const labels = app.paletteCommands.map(c => c.label);
+    const labels = app.paletteCommands.map((c) => c.label);
     expect(app.showPalette).toBe(true);
     expect(labels).toContain('Format document');
     expect(labels).toContain('Copy as TypeScript types');
     expect(labels).toContain('Copy as JSON Schema');
     expect(labels).toContain('“order” in the right pane');
 
-    app.paletteCommands.find(c => c.label === 'Sort keys A → Z')!.run();
+    app.paletteCommands.find((c) => c.label === 'Sort keys A → Z')!.run();
     expect(app.left.jsonText).toBe('{\n  "a": 1,\n  "b": 2\n}');
   });
 
@@ -152,7 +163,7 @@ describe('App', () => {
     const app = await create();
     app.onTextChange('{oops', app.left);
     app.openPalette();
-    const labels = app.paletteCommands.map(c => c.label);
+    const labels = app.paletteCommands.map((c) => c.label);
     expect(labels).not.toContain('Format document');
     expect(labels).toContain('Jump to the parse error');
   });
@@ -251,15 +262,28 @@ describe('App', () => {
   describe('embedded JSON', () => {
     it('unwraps one string selected in the tree', async () => {
       const app = await create();
-      app.onTextChange(JSON.stringify({ id: 1, body: JSON.stringify({ sku: 'A', qty: 2 }), other: '{"keep":1}' }), app.left);
+      app.onTextChange(
+        JSON.stringify({ id: 1, body: JSON.stringify({ sku: 'A', qty: 2 }), other: '{"keep":1}' }),
+        app.left,
+      );
       app.unwrapAt(app.left, '$.body');
-      expect(app.left.parsedJson).toEqual({ id: 1, body: { sku: 'A', qty: 2 }, other: '{"keep":1}' });
+      expect(app.left.parsedJson).toEqual({
+        id: 1,
+        body: { sku: 'A', qty: 2 },
+        other: '{"keep":1}',
+      });
       expect(app.left.jsonText).toContain('"body": {'); // pretty-printed
     });
 
     it('unwraps every embedded string and keeps big numbers exact', async () => {
       const app = await create();
-      app.onTextChange(JSON.stringify({ a: JSON.stringify({ b: '[1]' }) }).replace('{', '{"id":1234567890123456789,'), app.left);
+      app.onTextChange(
+        JSON.stringify({ a: JSON.stringify({ b: '[1]' }) }).replace(
+          '{',
+          '{"id":1234567890123456789,',
+        ),
+        app.left,
+      );
       app.unwrapAllIn(app.left);
       expect(app.left.parsedJson.a).toEqual({ b: [1] });
       expect(app.left.jsonText).toContain('"id": 1234567890123456789');
@@ -270,7 +294,7 @@ describe('App', () => {
       app.onTextChange(JSON.stringify('{"a":1}').slice(1, -1), app.left);
       expect(app.textFix(app.left)?.button).toBe('Unescape');
       app.openPalette();
-      app.paletteCommands.find(c => c.label.startsWith('Unescape JSON'))!.run();
+      app.paletteCommands.find((c) => c.label.startsWith('Unescape JSON'))!.run();
       expect(app.left.parsedJson).toEqual({ a: 1 });
       expect(app.textFix(app.left)).toBeNull();
     });
@@ -290,7 +314,7 @@ describe('App', () => {
       const app = await create();
       app.onTextChange('{"a":1}\n{"a":2}\n', app.left);
       app.openPalette();
-      app.paletteCommands.find(c => c.label === 'Convert JSON Lines to an array')!.run();
+      app.paletteCommands.find((c) => c.label === 'Convert JSON Lines to an array')!.run();
       expect(app.left.parsedJson).toEqual([{ a: 1 }, { a: 2 }]);
     });
 
@@ -298,20 +322,27 @@ describe('App', () => {
       const app = await create();
       app.onTextChange('[{"a":1}]', app.left);
       app.openPalette();
-      const labels = app.paletteCommands.map(c => c.label);
+      const labels = app.paletteCommands.map((c) => c.label);
       expect(labels).toContain('Copy as C# classes');
       expect(labels).toContain('Copy as JSON Lines');
     });
 
     it('copies the converted text, loading the converter on demand', async () => {
       const copied: string[] = [];
-      Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async (t: string) => void copied.push(t) } });
+      Object.defineProperty(navigator, 'clipboard', {
+        configurable: true,
+        value: { writeText: async (t: string) => void copied.push(t) },
+      });
       const app = await create();
       app.onTextChange('{"a":1}', app.left);
       app.openPalette();
       // One at a time: each converter is a separate lazy chunk, so concurrent copies can finish in any order.
-      for (const [i, label] of ['Copy as YAML', 'Copy as TypeScript types', 'Copy as JSON Schema'].entries()) {
-        app.paletteCommands.find(c => c.label === label)!.run();
+      for (const [i, label] of [
+        'Copy as YAML',
+        'Copy as TypeScript types',
+        'Copy as JSON Schema',
+      ].entries()) {
+        app.paletteCommands.find((c) => c.label === label)!.run();
         await vi.waitFor(() => expect(copied).toHaveLength(i + 1));
       }
       expect(copied[0]).toContain('a: 1');
@@ -322,7 +353,12 @@ describe('App', () => {
 
   describe('keyboard shortcuts', () => {
     const press = (key: string, extra: KeyboardEventInit = {}) => {
-      const event = new KeyboardEvent('keydown', { key, ctrlKey: true, cancelable: true, ...extra });
+      const event = new KeyboardEvent('keydown', {
+        key,
+        ctrlKey: true,
+        cancelable: true,
+        ...extra,
+      });
       document.dispatchEvent(event);
       return event;
     };
@@ -368,7 +404,7 @@ describe('App', () => {
       app.onTextChange(TEXT, app.left);
       app.onCursor(app.left, TEXT.indexOf('"A"'));
       expect(app.left.focusPath).toBe('$.items[0].sku');
-      expect(app.breadcrumb(app.left).map(c => c.label)).toEqual(['$', 'items', '[0]', 'sku']);
+      expect(app.breadcrumb(app.left).map((c) => c.label)).toEqual(['$', 'items', '[0]', 'sku']);
     });
 
     it('selects the value in the editor when a breadcrumb step is clicked', async () => {
@@ -403,7 +439,8 @@ describe('App', () => {
   });
 
   describe('schema validation', () => {
-    const SCHEMA = '{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","required":["id"],"properties":{"qty":{"type":"integer"}}}';
+    const SCHEMA =
+      '{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","required":["id"],"properties":{"qty":{"type":"integer"}}}';
 
     it('validates one pane against the schema in the other, and marks the errors in the tree', async () => {
       const app = await create();
@@ -416,7 +453,7 @@ describe('App', () => {
       expect(app.validation).toMatchObject({ docSide: 'left', pending: true }); // the validator loads on first use
       await vi.waitFor(() => expect(app.validation!.result).toBeDefined());
       const v = app.validation!;
-      expect(v.result!.errors.map(e => e.path)).toEqual(['$', '$.qty']);
+      expect(v.result!.errors.map((e) => e.path)).toEqual(['$', '$.qty']);
       expect(app.validation).toBe(v); // memoized
       expect(app.treeMarks(app.left)).toEqual({ $: 'del', '$.qty': 'del' });
       expect(app.treeMarks(app.right)).toBeNull();
@@ -470,7 +507,10 @@ describe('App', () => {
 
     it('copies a JSON Patch that skips ignored paths', async () => {
       const copied: string[] = [];
-      Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async (t: string) => void copied.push(t) } });
+      Object.defineProperty(navigator, 'clipboard', {
+        configurable: true,
+        value: { writeText: async (t: string) => void copied.push(t) },
+      });
       const app = await create();
       app.onTextChange('{"a":1,"at":1,"list":[1,2]}', app.left);
       app.onTextChange('{"a":2,"at":2,"list":[1]}', app.right);
@@ -508,7 +548,8 @@ describe('App', () => {
 
     // Each side stays under LARGE_TEXT_CHARS (parsed at once) but together they reach the worker.
     const pad = 'x'.repeat(WORKER_MIN_CHARS / 2);
-    const doc = (big: string, v: unknown) => `{"big":${big},"v":${JSON.stringify(v)},"pad":"${pad}"}`;
+    const doc = (big: string, v: unknown) =>
+      `{"big":${big},"v":${JSON.stringify(v)},"pad":"${pad}"}`;
 
     beforeEach(() => vi.stubGlobal('Worker', InProcessWorker));
     afterEach(() => vi.unstubAllGlobals());
@@ -570,7 +611,10 @@ describe('App', () => {
     it('validates in the worker', async () => {
       const app = await create();
       app.onTextChange(doc('1', 1), app.left);
-      app.onTextChange(`{"type":"object","properties":{"v":{"type":"string"}},"description":"${pad}"}`, app.right);
+      app.onTextChange(
+        `{"type":"object","properties":{"v":{"type":"string"}},"description":"${pad}"}`,
+        app.right,
+      );
       app.startValidation('left');
 
       expect(app.validation).toMatchObject({ docSide: 'left', pending: true });
@@ -628,12 +672,19 @@ describe('App', () => {
       const app = await create();
       app.onTextChange(DOC, app.left);
       await app.redactPane(app.left);
-      expect(app.left.parsedJson).toEqual({ user: 'priya', password: '***', email: 'p***@example.com' });
+      expect(app.left.parsedJson).toEqual({
+        user: 'priya',
+        password: '***',
+        email: 'p***@example.com',
+      });
     });
 
     it('copies a redacted version, and offers both in the palette', async () => {
       const copied: string[] = [];
-      Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async (t: string) => void copied.push(t) } });
+      Object.defineProperty(navigator, 'clipboard', {
+        configurable: true,
+        value: { writeText: async (t: string) => void copied.push(t) },
+      });
       const app = await create();
       app.onTextChange(DOC, app.left);
       await app.copyRedacted(app.left);
@@ -642,14 +693,17 @@ describe('App', () => {
       expect(app.left.parsedJson.password).toBe('hunter2'); // the pane is unchanged
 
       app.openPalette();
-      const labels = app.paletteCommands.map(c => c.label);
+      const labels = app.paletteCommands.map((c) => c.label);
       expect(labels).toContain('Copy with sensitive values hidden');
       expect(labels).toContain('Copy share link, hiding sensitive values');
     });
 
     it('shares a link with sensitive values hidden', async () => {
       const copied: string[] = [];
-      Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async (t: string) => void copied.push(t) } });
+      Object.defineProperty(navigator, 'clipboard', {
+        configurable: true,
+        value: { writeText: async (t: string) => void copied.push(t) },
+      });
       const app = await create();
       app.onTextChange(DOC, app.left);
       await app.shareLink(true);
@@ -660,7 +714,10 @@ describe('App', () => {
 
     it('refuses a hidden-values link when a pane is not valid JSON', async () => {
       const copied: string[] = [];
-      Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async (t: string) => void copied.push(t) } });
+      Object.defineProperty(navigator, 'clipboard', {
+        configurable: true,
+        value: { writeText: async (t: string) => void copied.push(t) },
+      });
       const app = await create();
       app.onTextChange('{"password": ', app.left);
       await app.shareLink(true);
@@ -668,7 +725,8 @@ describe('App', () => {
     });
   });
 
-  const fakeFile = (name: string, text: string, size = text.length) => ({ name, size, text: async () => text }) as unknown as File;
+  const fakeFile = (name: string, text: string, size = text.length) =>
+    ({ name, size, text: async () => text }) as unknown as File;
 
   it('opens a picked file in the target pane and a second one in the other pane', async () => {
     const app = await create();
@@ -709,7 +767,8 @@ describe('App', () => {
   });
 
   describe('saved files', () => {
-    const stored = () => JSON.parse(localStorage.getItem('json-viewer-files') ?? '[]') as SavedFile[];
+    const stored = () =>
+      JSON.parse(localStorage.getItem('json-viewer-files') ?? '[]') as SavedFile[];
 
     async function save(app: App, panel = app.left, name = 'doc'): Promise<void> {
       app.openSaveDialog(panel);
@@ -726,7 +785,11 @@ describe('App', () => {
       await save(tabA, tabA.left, 'from-a');
       await save(tabB, tabB.left, 'from-b');
 
-      expect(stored().map(f => f.name).sort()).toEqual(['from-a', 'from-b']);
+      expect(
+        stored()
+          .map((f) => f.name)
+          .sort(),
+      ).toEqual(['from-a', 'from-b']);
     });
 
     it('does not mark a pane as saved when the browser refuses to store it', async () => {
@@ -770,7 +833,7 @@ describe('App', () => {
       expect(app.left.currentFileId).toBeNull();
 
       await app.restoreFile(f, [app.left]);
-      expect(stored().map(x => x.id)).toEqual([f.id]);
+      expect(stored().map((x) => x.id)).toEqual([f.id]);
       expect(app.left.currentFileId).toBe(f.id);
     });
 
@@ -838,7 +901,9 @@ describe('App', () => {
       app.onTextChange('{"last":"edit"}', app.left);
       app.ngDoCheck(); // schedules the delayed save
       window.dispatchEvent(new Event('pagehide'));
-      expect(JSON.parse(localStorage.getItem('json-viewer-session')!).left.text).toBe('{"last":"edit"}');
+      expect(JSON.parse(localStorage.getItem('json-viewer-session')!).left.text).toBe(
+        '{"last":"edit"}',
+      );
     });
 
     it('keeps the session in IndexedDB when it is available, and moves an old one over', async () => {
@@ -875,7 +940,10 @@ describe('App', () => {
 
     it('ignores a corrupt session and falls back to the most recent saved files', async () => {
       localStorage.setItem('json-viewer-session', '{not json');
-      localStorage.setItem('json-viewer-files', JSON.stringify([file('1', 'one', '{"n":1}'), file('2', 'two', '{"n":2}')]));
+      localStorage.setItem(
+        'json-viewer-files',
+        JSON.stringify([file('1', 'one', '{"n":1}'), file('2', 'two', '{"n":2}')]),
+      );
       const app = await create();
       expect(app.left.parsedJson).toEqual({ n: 1 });
       expect(app.right.parsedJson).toEqual({ n: 2 });

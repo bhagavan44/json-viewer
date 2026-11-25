@@ -8,7 +8,12 @@ import {
   SavedFile,
 } from './file-store';
 
-const file = (id: string, savedAt: number, content = '{}'): SavedFile => ({ id, name: id, content, savedAt });
+const file = (id: string, savedAt: number, content = '{}'): SavedFile => ({
+  id,
+  name: id,
+  content,
+  savedAt,
+});
 
 describe('IndexedDbFileStore', () => {
   beforeEach(() => {
@@ -37,7 +42,10 @@ describe('IndexedDbFileStore', () => {
   });
 
   it('moves files saved by earlier versions out of localStorage, once', async () => {
-    localStorage.setItem(LEGACY_FILES_KEY, JSON.stringify([file('legacy', 5, '{"x":1}'), { junk: true }]));
+    localStorage.setItem(
+      LEGACY_FILES_KEY,
+      JSON.stringify([file('legacy', 5, '{"x":1}'), { junk: true }]),
+    );
     const store = new IndexedDbFileStore();
     expect(await store.load()).toEqual([file('legacy', 5, '{"x":1}')]);
     expect(localStorage.getItem(LEGACY_FILES_KEY)).toBeNull();
@@ -115,7 +123,9 @@ describe('IndexedDbFileStore', () => {
     });
 
     it('keeps larger unsaved text than localStorage does', () => {
-      expect(new IndexedDbFileStore().maxSessionText).toBeGreaterThan(new LocalStorageFileStore().maxSessionText);
+      expect(new IndexedDbFileStore().maxSessionText).toBeGreaterThan(
+        new LocalStorageFileStore().maxSessionText,
+      );
     });
   });
 });

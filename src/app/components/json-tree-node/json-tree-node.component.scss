@@ -46,7 +46,9 @@
   flex-shrink: 0;
   cursor: pointer;
   color: #6b7a8d;
-  transition: transform 0.15s ease, color 0.15s;
+  transition:
+    transform 0.15s ease,
+    color 0.15s;
 
   mat-icon {
     @include icon-size(18px);
@@ -71,7 +73,7 @@
 
 // ─── Key ────────────────────────────────────────────────────────────────────
 .node-key {
-  color: #9cdcfe;   // blue-ish — matches VS Code JSON key colour
+  color: #9cdcfe; // blue-ish — matches VS Code JSON key colour
   font-weight: 500;
   white-space: nowrap;
 }
@@ -89,15 +91,24 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 
-  &.type-string  { color: #ce9178; }   // orange-brown (VS Code string)
-  &.type-number  { color: #b5cea8; }   // light green (VS Code number)
-  &.type-boolean { color: #569cd6; }   // blue (VS Code keyword)
-  &.type-null    { color: #808080; font-style: italic; }
+  &.type-string {
+    color: #ce9178;
+  } // orange-brown (VS Code string)
+  &.type-number {
+    color: #b5cea8;
+  } // light green (VS Code number)
+  &.type-boolean {
+    color: #569cd6;
+  } // blue (VS Code keyword)
+  &.type-null {
+    color: #808080;
+    font-style: italic;
+  }
 }
 
 // ─── Brackets ───────────────────────────────────────────────────────────────
 .bracket {
-  color: #ffd700;   // gold brackets
+  color: #ffd700; // gold brackets
   font-weight: 600;
 }
 
@@ -155,9 +166,15 @@
     outline-offset: -1px;
   }
 
-  &.mark-add { background: var(--diff-add-bg); }
-  &.mark-del { background: var(--diff-del-bg); }
-  &.mark-chg { background: var(--diff-chg-bg); }
+  &.mark-add {
+    background: var(--diff-add-bg);
+  }
+  &.mark-del {
+    background: var(--diff-del-bg);
+  }
+  &.mark-chg {
+    background: var(--diff-chg-bg);
+  }
 
   &.flash {
     animation: row-flash 1.1s ease-out;
@@ -165,8 +182,15 @@
 }
 
 @keyframes row-flash {
-  0%, 60% { outline: 2px solid var(--accent); outline-offset: -2px; }
-  100% { outline: 2px solid transparent; outline-offset: -2px; }
+  0%,
+  60% {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+  }
+  100% {
+    outline: 2px solid transparent;
+    outline-offset: -2px;
+  }
 }
 
 .diff-gutter {
@@ -177,9 +201,15 @@
   flex-shrink: 0;
 }
 
-.mark-add .diff-gutter { color: var(--diff-add); }
-.mark-del .diff-gutter { color: var(--diff-del); }
-.mark-chg .diff-gutter { color: var(--diff-chg); }
+.mark-add .diff-gutter {
+  color: var(--diff-add);
+}
+.mark-del .diff-gutter {
+  color: var(--diff-del);
+}
+.mark-chg .diff-gutter {
+  color: var(--diff-chg);
+}
 
 .change-dot {
   margin-left: auto;
@@ -207,19 +237,39 @@
 
 // ─── Children container ─────────────────────────────────────────────────────
 // Indentation is applied by padding-left on child .tree-node elements.
-.children { display: block; }
+.children {
+  display: block;
+}
 
 // ─── Light theme overrides (when .light class on ancestor) ──────────────────
 :host-context(.app-container:not(.dark)) {
-  .node-key          { color: #0451a5; }
-  .node-value.type-string   { color: #a31515; }
-  .node-value.type-number   { color: #098658; }
-  .node-value.type-boolean  { color: #0000ff; }
-  .node-value.type-null     { color: #777; }
-  .bracket           { color: #795e26; }
-  .collapsed-summary { color: #888; }
-  .node-colon        { color: #555; }
-  .toggle-btn        { color: #555; }
+  .node-key {
+    color: #0451a5;
+  }
+  .node-value.type-string {
+    color: #a31515;
+  }
+  .node-value.type-number {
+    color: #098658;
+  }
+  .node-value.type-boolean {
+    color: #0000ff;
+  }
+  .node-value.type-null {
+    color: #777;
+  }
+  .bracket {
+    color: #795e26;
+  }
+  .collapsed-summary {
+    color: #888;
+  }
+  .node-colon {
+    color: #555;
+  }
+  .toggle-btn {
+    color: #555;
+  }
 
   .node-row:hover {
     background: rgba(0, 90, 200, 0.05);

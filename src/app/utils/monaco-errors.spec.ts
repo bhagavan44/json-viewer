@@ -11,7 +11,9 @@ describe('ignoreMonacoCancellations', () => {
     const target = new EventTarget() as Window;
     ignoreMonacoCancellations(target);
     const seen: string[] = [];
-    target.addEventListener('unhandledrejection', (e) => seen.push(String((e as PromiseRejectionEvent).reason.message)));
+    target.addEventListener('unhandledrejection', (e) =>
+      seen.push(String((e as PromiseRejectionEvent).reason.message)),
+    );
 
     const canceled = Object.assign(new Error('Canceled'), { name: 'Canceled' });
     const cancelEvent = rejection(canceled);
