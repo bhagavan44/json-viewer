@@ -106,30 +106,3 @@ export function readSession(stored: unknown, files: SavedFile[]): RestoredSessio
     ignoreText: typeof session.ignoreText === 'string' ? session.ignoreText : '',
   };
 }
-
-/**
- * The values whose change means the session must be saved again. Compare two of these with
- * `sameValues()`; the saved files count only by number and newest save time.
- */
-export function sessionValues(state: SessionState): unknown[] {
-  const { left: l, right: r, savedFiles } = state;
-  return [
-    l.jsonText,
-    r.jsonText,
-    l.currentFileId,
-    r.currentFileId,
-    l.sourceName,
-    r.sourceName,
-    l.mode,
-    r.mode,
-    state.viewMode,
-    state.active,
-    savedFiles.length + ':' + (savedFiles[0]?.savedAt ?? ''),
-    state.matchArrays,
-    state.ignoreText,
-  ];
-}
-
-export function sameValues(a: readonly unknown[], b: readonly unknown[]): boolean {
-  return a.length === b.length && a.every((value, i) => value === b[i]);
-}

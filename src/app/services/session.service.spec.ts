@@ -1,3 +1,5 @@
+import { signal } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
 import { FileStore } from '../utils/file-store';
 import { SessionState } from '../utils/session';
 import { SESSION_SAVE_DELAY_MS, SessionService } from './session.service';
@@ -30,7 +32,8 @@ describe('SessionService', () => {
   let service: SessionService;
   beforeEach(() => {
     vi.useFakeTimers();
-    service = new SessionService();
+    TestBed.configureTestingModule({ providers: [SessionService] });
+    service = TestBed.inject(SessionService);
   });
   afterEach(() => {
     service.ngOnDestroy();
@@ -50,37 +53,51 @@ describe('SessionService', () => {
 
   it('saves nothing before it is started', async () => {
     const store = memoryStore();
-    service.check();
     service.flush();
     await service.persist();
+    TestBed.tick();
     await vi.runAllTimersAsync();
     expect(store.saved).toEqual([]);
   });
 
   it('saves once the state has been still for a moment, and only when it changed', async () => {
     const store = memoryStore();
-    let current = state('{"a":1}');
-    service.start(store, () => current);
+    const current = signal(state('{"a":1}'));
+    service.start(store, () => current());
 
-    service.check();
+    TestBed.tick();
     await vi.advanceTimersByTimeAsync(SESSION_SAVE_DELAY_MS - 1);
     expect(store.saved).toHaveLength(0);
-    current = state('{"a":2}');
-    service.check(); // restarts the delay
+    current.set(state('{"a":2}'));
+    TestBed.tick(); // restarts the delay
     await vi.advanceTimersByTimeAsync(SESSION_SAVE_DELAY_MS - 1);
     expect(store.saved).toHaveLength(0);
     await vi.advanceTimersByTimeAsync(1);
     expect(store.saved).toHaveLength(1);
+    expect((store.saved[0] as { left: { text: string } }).left.text).toBe('{"a":2}');
 
-    service.check(); // nothing changed
+    TestBed.tick(); // nothing changed
     await vi.runAllTimersAsync();
     expect(store.saved).toHaveLength(1);
+  });
+
+  it('stops watching once destroyed', async () => {
+    const store = memoryStore();
+    const current = signal(state('{"a":1}'));
+    service.start(store, () => current());
+    TestBed.tick();
+    service.ngOnDestroy();
+
+    current.set(state('{"a":2}'));
+    TestBed.tick();
+    await vi.runAllTimersAsync();
+    expect(store.saved).toEqual([]);
   });
 
   it('saves at once when flushed, instead of after the delay', async () => {
     const store = memoryStore();
     service.start(store, () => state('{"last":1}'));
-    service.check();
+    TestBed.tick();
     service.flush();
     await vi.runAllTimersAsync();
     expect(store.saved).toHaveLength(1);

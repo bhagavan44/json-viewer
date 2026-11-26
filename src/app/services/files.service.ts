@@ -1,4 +1,4 @@
-import { Injectable, OnDestroy } from '@angular/core';
+import { Injectable, OnDestroy, signal } from '@angular/core';
 import { FileStore, LocalStorageFileStore, SavedFile, createFileStore } from '../utils/file-store';
 
 /**
@@ -8,8 +8,17 @@ import { FileStore, LocalStorageFileStore, SavedFile, createFileStore } from '..
  */
 @Injectable()
 export class FilesService implements OnDestroy {
-  /** Most recently saved first. Replaced, never mutated, whenever the files change. */
-  list: SavedFile[] = [];
+  private readonly files = signal<SavedFile[]>([]);
+  /**
+   * Most recently saved first. Replaced, never mutated, whenever the files change. Backed by a
+   * signal, so the session is saved again when it changes.
+   */
+  get list(): SavedFile[] {
+    return this.files();
+  }
+  set list(files: SavedFile[]) {
+    this.files.set(files);
+  }
   private current: FileStore = createFileStore();
   private unwatch?: () => void;
   /** The file list is filtered on every render; this keeps it from being re-scanned each time. */
