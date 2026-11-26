@@ -1,13 +1,13 @@
-import { Injectable, OnDestroy } from '@angular/core';
-import { FileStore, SavedFile } from '../utils/file-store';
 import {
-  RestoredSession,
-  SessionState,
-  readSession,
-  sameValues,
-  sessionValues,
-  toSession,
-} from '../utils/session';
+  EffectRef,
+  EnvironmentInjector,
+  Injectable,
+  OnDestroy,
+  effect,
+  inject,
+} from '@angular/core';
+import { FileStore, SavedFile } from '../utils/file-store';
+import { RestoredSession, SessionState, readSession, toSession } from '../utils/session';
 
 /** How long the app must be still before the session is saved. */
 export const SESSION_SAVE_DELAY_MS = 500;
@@ -18,11 +18,16 @@ export const SESSION_SAVE_DELAY_MS = 500;
  */
 @Injectable()
 export class SessionService implements OnDestroy {
+  /**
+   * Saving is not part of rendering, so the effect is created in the app's injector rather than
+   * the component's: it then runs whenever the app is checked, without waiting for the view.
+   */
+  private readonly injector = inject(EnvironmentInjector);
   private store?: FileStore;
   /** Reads the current state. Set once the session is restored; nothing is saved before that. */
   private read?: () => SessionState;
+  private watcher?: EffectRef;
   private timer?: ReturnType<typeof setTimeout>;
-  private seen: unknown[] = [];
 
   /** The stored session, or null when there is none or it cannot be used. */
   async restore(store: FileStore, savedFiles: SavedFile[]): Promise<RestoredSession | null> {
@@ -33,20 +38,23 @@ export class SessionService implements OnDestroy {
     }
   }
 
-  /** Starts saving. Call it once the restored session is applied, so it is not overwritten. */
+  /**
+   * Starts saving. Call it once the restored session is applied, so it is not overwritten.
+   *
+   * `read` must get everything it returns from signals: the session is saved again whenever one
+   * of the signals it read changes, so a value that is not a signal is stored but never noticed.
+   */
   start(store: FileStore, read: () => SessionState): void {
     this.store = store;
     this.read = read;
-  }
-
-  /** Schedules a save when anything the session remembers has changed. Cheap enough for every render. */
-  check(): void {
-    if (!this.read) return;
-    const values = sessionValues(this.read());
-    if (sameValues(values, this.seen)) return;
-    this.seen = values;
-    clearTimeout(this.timer);
-    this.timer = setTimeout(() => void this.persist(), SESSION_SAVE_DELAY_MS);
+    this.watcher?.destroy();
+    this.watcher = effect(
+      () => {
+        read();
+        this.schedule();
+      },
+      { injector: this.injector, manualCleanup: true },
+    );
   }
 
   /** Saves at once, e.g. when the tab is hidden or closed, so a change made just before is not lost. */
@@ -67,6 +75,13 @@ export class SessionService implements OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.watcher?.destroy();
     clearTimeout(this.timer);
+  }
+
+  /** Saves once nothing has changed for a moment. Each change restarts the delay. */
+  private schedule(): void {
+    clearTimeout(this.timer);
+    this.timer = setTimeout(() => void this.persist(), SESSION_SAVE_DELAY_MS);
   }
 }

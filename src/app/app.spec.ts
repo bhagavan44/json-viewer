@@ -3,6 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { FormsModule } from '@angular/forms';
 import { MatMenuModule } from '@angular/material/menu';
 import { App, LARGE_TEXT_CHARS, PARSE_DEBOUNCE_MS, SavedFile, WORKER_MIN_CHARS } from './app';
+import { SESSION_SAVE_DELAY_MS } from './services/session.service';
 import { LosslessNumber } from './utils/json-parse';
 import { JsonWorkerMessage, handleJsonRequest } from './utils/json-worker-handler';
 import { SHARE_HASH_PREFIX, encodeShare } from './utils/share-link';
@@ -899,11 +900,49 @@ describe('App', () => {
     it('saves the session at once when the page is hidden', async () => {
       const app = await create();
       app.onTextChange('{"last":"edit"}', app.left);
-      app.ngDoCheck(); // schedules the delayed save
+      TestBed.tick(); // schedules the delayed save
       window.dispatchEvent(new Event('pagehide'));
       expect(JSON.parse(localStorage.getItem('json-viewer-session')!).left.text).toBe(
         '{"last":"edit"}',
       );
+    });
+
+    it('saves the session shortly after anything it remembers changes', async () => {
+      const app = await create();
+      vi.useFakeTimers();
+      try {
+        const changes: [string, () => void][] = [
+          ['left text', () => app.onTextChange('{"a":1}', app.left)],
+          ['right text', () => app.onTextChange('{"b":1}', app.right)],
+          ['left file', () => (app.left.currentFileId = '1')],
+          ['right file', () => (app.right.currentFileId = '1')],
+          ['left source', () => (app.left.sourceName = 'a.json')],
+          ['right source', () => (app.right.sourceName = 'b.json')],
+          ['left mode', () => (app.left.mode = 'tree')],
+          ['right mode', () => (app.right.mode = 'table')],
+          ['view', () => (app.viewMode = 'compare')],
+          ['active pane', () => app.setActive(app.activePanel === app.left ? app.right : app.left)],
+          ['array matching', () => (app.matchArrays = false)],
+          ['ignored paths', () => (app.ignoreText = '$..id')],
+          ['saved files', () => (app.savedFiles = [file('1', 'order', '{}')])],
+        ];
+        TestBed.tick();
+        await vi.runAllTimersAsync();
+        for (const [what, change] of changes) {
+          localStorage.removeItem('json-viewer-session');
+          change();
+          TestBed.tick();
+          await vi.advanceTimersByTimeAsync(SESSION_SAVE_DELAY_MS);
+          expect(localStorage.getItem('json-viewer-session'), what).not.toBeNull();
+        }
+
+        localStorage.removeItem('json-viewer-session');
+        TestBed.tick();
+        await vi.runAllTimersAsync();
+        expect(localStorage.getItem('json-viewer-session'), 'unchanged').toBeNull();
+      } finally {
+        vi.useRealTimers();
+      }
     });
 
     it('keeps the session in IndexedDB when it is available, and moves an old one over', async () => {

@@ -1,12 +1,5 @@
 import { SavedFile } from './file-store';
-import {
-  PaneState,
-  SessionState,
-  readSession,
-  sameValues,
-  sessionValues,
-  toSession,
-} from './session';
+import { PaneState, SessionState, readSession, toSession } from './session';
 
 const file: SavedFile = { id: '1', name: 'order', content: '{"a":1}', savedAt: 100 };
 
@@ -115,28 +108,6 @@ describe('session', () => {
         matchArrays: true,
         ignoreText: '',
       });
-    });
-  });
-
-  describe('sessionValues', () => {
-    it('changes when anything the session remembers changes', () => {
-      const base = state();
-      const changes: Partial<SessionState>[] = [
-        { left: pane({ jsonText: '{}' }) },
-        { right: pane({ currentFileId: '1' }) },
-        { left: pane({ sourceName: 'a.json' }) },
-        { right: pane({ mode: 'table' }) },
-        { viewMode: 'compare' },
-        { active: 'right' },
-        { matchArrays: false },
-        { ignoreText: '$..id' },
-        { savedFiles: [] },
-        { savedFiles: [{ ...file, savedAt: 200 }] },
-      ];
-      for (const change of changes) {
-        expect(sameValues(sessionValues(base), sessionValues({ ...base, ...change }))).toBe(false);
-      }
-      expect(sameValues(sessionValues(base), sessionValues(state()))).toBe(true);
     });
   });
 });

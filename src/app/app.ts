@@ -1,12 +1,12 @@
 import {
   ChangeDetectorRef,
   Component,
-  DoCheck,
   ElementRef,
   HostListener,
   OnDestroy,
   Optional,
   ViewChild,
+  signal,
 } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { SwUpdate } from '@angular/service-worker';
@@ -37,7 +37,7 @@ import { TreeEdit } from './components/json-tree/json-tree.component';
 import { ShareLinkError } from './utils/share-link';
 import { PaletteCommand } from './components/command-palette/command-palette.component';
 import { SavedFile } from './utils/file-store';
-import { PANEL_MODES, PanelMode, RestoredSession, SessionState } from './utils/session';
+import { PANEL_MODES, PaneState, PanelMode, RestoredSession, SessionState } from './utils/session';
 import { SessionService } from './services/session.service';
 import { ShareService } from './services/share.service';
 import { FilesService } from './services/files.service';
@@ -74,23 +74,51 @@ export interface PanelState {
   editorSelect: { start: number; end: number } | null;
 }
 
-function newPanel(): PanelState {
-  return {
-    jsonText: '',
-    parsedJson: null,
-    jsonError: null,
-    isValid: false,
-    mode: 'editor',
-    expandAllTrigger: 0,
-    collapseAllTrigger: 0,
-    currentFileId: null,
-    sourceName: null,
-    errorLocation: null,
-    jumpRequest: null,
-    focusPath: null,
-    treeReveal: null,
-    editorSelect: null,
-  };
+/**
+ * A pane. The fields the session remembers are signals behind plain properties, so changing one
+ * schedules a session save (see `SessionService.start()`).
+ */
+class Panel implements PanelState {
+  private readonly text = signal('');
+  private readonly fileId = signal<string | null>(null);
+  private readonly source = signal<string | null>(null);
+  private readonly shownAs = signal<PanelMode>('editor');
+
+  get jsonText(): string {
+    return this.text();
+  }
+  set jsonText(text: string) {
+    this.text.set(text);
+  }
+  get currentFileId(): string | null {
+    return this.fileId();
+  }
+  set currentFileId(id: string | null) {
+    this.fileId.set(id);
+  }
+  get sourceName(): string | null {
+    return this.source();
+  }
+  set sourceName(name: string | null) {
+    this.source.set(name);
+  }
+  get mode(): PanelMode {
+    return this.shownAs();
+  }
+  set mode(mode: PanelMode) {
+    this.shownAs.set(mode);
+  }
+
+  parsedJson: any = null;
+  jsonError: string | null = null;
+  isValid = false;
+  expandAllTrigger = 0;
+  collapseAllTrigger = 0;
+  errorLocation: JsonErrorLocation | null = null;
+  jumpRequest: { line: number; column: number; n: number } | null = null;
+  focusPath: string | null = null;
+  treeReveal: { path: string } | null = null;
+  editorSelect: { start: number; end: number } | null = null;
 }
 
 /** Above this size, the cursor is not mapped to a path (each lookup scans the text). */
@@ -116,19 +144,40 @@ export const PARSE_DEBOUNCE_MS = 250;
   // One per app, so its timers and listeners go away with it.
   providers: [SessionService, ShareService, FilesService, CompareService],
 })
-export class App implements DoCheck, OnDestroy {
+export class App implements OnDestroy {
   @ViewChild('leftPanel', { static: false }) leftPanelRef!: ElementRef<HTMLElement>;
 
   isDarkTheme = true;
   editorTheme: 'vs-dark' | 'vs' = 'vs-dark';
 
   // ── Workspace / Compare ───────────────────────────────────────────────────
-  viewMode: 'edit' | 'compare' = 'edit';
+  // What the session remembers is kept in signals, so changing it schedules a save; see
+  // `SessionService.start()`.
+  private readonly view = signal<'edit' | 'compare'>('edit');
+  private readonly matchByKey = signal(true);
+  private readonly ignored = signal('');
+
+  get viewMode(): 'edit' | 'compare' {
+    return this.view();
+  }
+  set viewMode(mode: 'edit' | 'compare') {
+    this.view.set(mode);
+  }
   changesOnly = false;
   /** Match array items by an identifying key (id, sku...) instead of by index. */
-  matchArrays = true;
+  get matchArrays(): boolean {
+    return this.matchByKey();
+  }
+  set matchArrays(match: boolean) {
+    this.matchByKey.set(match);
+  }
   /** JSONPath expressions (comma-separated) whose values Compare leaves out, e.g. `$..updatedAt`. */
-  ignoreText = '';
+  get ignoreText(): string {
+    return this.ignored();
+  }
+  set ignoreText(text: string) {
+    this.ignored.set(text);
+  }
   /** Why `ignoreText` could not be used, if it could not. */
   get ignoreError(): string | null {
     return this.compare.ignoreError;
@@ -138,9 +187,15 @@ export class App implements DoCheck, OnDestroy {
     return this.compare.diffPending;
   }
 
-  left: PanelState = newPanel();
-  right: PanelState = newPanel();
-  activePanel!: PanelState;
+  left: PanelState = new Panel();
+  right: PanelState = new Panel();
+  private readonly active = signal(this.left);
+  get activePanel(): PanelState {
+    return this.active();
+  }
+  set activePanel(panel: PanelState) {
+    this.active.set(panel);
+  }
   savingPanel: PanelState | null = null;
 
   isDragging = false;
@@ -175,7 +230,6 @@ export class App implements DoCheck, OnDestroy {
     private compare: CompareService,
     @Optional() private swUpdate: SwUpdate | null,
   ) {
-    this.activePanel = this.left;
     this.loadPersistedTheme();
     this.watchForUpdates();
     this.share.watch((hash) => void this.openSharedHash(hash));
@@ -992,11 +1046,6 @@ export class App implements DoCheck, OnDestroy {
   }
 
   // ── Session (autosave / restore) ──────────────────────────────────────────
-  /** Schedules a session save when anything it remembers has changed. Runs on every render. */
-  ngDoCheck(): void {
-    this.session.check();
-  }
-
   /** Saves at once when the tab is hidden or closed, so a change made just before is not lost. */
   @HostListener('window:pagehide')
   flushSession(): void {
@@ -1013,10 +1062,20 @@ export class App implements DoCheck, OnDestroy {
     return this.session.persist();
   }
 
+  /**
+   * What the session remembers. Everything here must come from a signal, since the session is
+   * saved again only when a signal read here changes (see `SessionService.start()`).
+   */
   private sessionState(): SessionState {
+    const pane = ({ jsonText, currentFileId, sourceName, mode }: PanelState): PaneState => ({
+      jsonText,
+      currentFileId,
+      sourceName,
+      mode,
+    });
     return {
-      left: this.left,
-      right: this.right,
+      left: pane(this.left),
+      right: pane(this.right),
       viewMode: this.viewMode,
       active: this.activePanel === this.right ? 'right' : 'left',
       matchArrays: this.matchArrays,
