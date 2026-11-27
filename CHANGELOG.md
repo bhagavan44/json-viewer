@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.2](https://github.com/bhagavan44/json-viewer/compare/v0.5.1...v0.5.2) (2026-11-26)
+
+
+### Refactoring
+
+* track session changes with signals instead of ngDoCheck ([#98](https://github.com/bhagavan44/json-viewer/issues/98)) ([a60f786](https://github.com/bhagavan44/json-viewer/commit/a60f786ce8e8e1b2ec1b9c1bf07b25147f97646c))
+
 ## [0.5.1](https://github.com/bhagavan44/json-viewer/compare/v0.5.0...v0.5.1) (2026-11-25)
 
 
