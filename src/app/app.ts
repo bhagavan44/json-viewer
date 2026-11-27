@@ -72,6 +72,8 @@ export interface PanelState {
   /** One-shot requests to show a path, cleared once handled. */
   treeReveal: { path: string } | null;
   editorSelect: { start: number; end: number } | null;
+  /** A large opened document is waiting to be parsed; the pane shows "Parsing…". */
+  parsing: boolean;
 }
 
 /**
@@ -119,6 +121,7 @@ class Panel implements PanelState {
   focusPath: string | null = null;
   treeReveal: { path: string } | null = null;
   editorSelect: { start: number; end: number } | null = null;
+  parsing = false;
 }
 
 /** Above this size, the cursor is not mapped to a path (each lookup scans the text). */
@@ -135,6 +138,15 @@ const MAX_OPEN_BYTES = 25 * 1024 * 1024;
 export const LARGE_TEXT_CHARS = 200_000;
 /** How long typing must pause before a large document is parsed again. */
 export const PARSE_DEBOUNCE_MS = 250;
+/**
+ * Above this size, an opened document is shown in the tree instead of the editor: Monaco is slow
+ * with huge models, and it creates none until the pane is switched to the editor.
+ */
+export const LARGE_FILE_CHARS = 5_000_000;
+/** How long a large opened document waits before parsing, so the pane can show "Parsing…" first. */
+export const OPEN_PARSE_DELAY_MS = 50;
+/** Why a large document was opened in the tree. */
+const LARGE_FILE_NOTE = 'large files are slow in the editor';
 
 @Component({
   selector: 'app-root',
@@ -301,8 +313,29 @@ export class App implements OnDestroy {
 
   private assignFile(file: SavedFile, panel: PanelState): void {
     panel.currentFileId = file.id;
-    panel.jsonText = file.content;
-    this.parsePanel(panel);
+    this.openText(panel, file.content);
+  }
+
+  /**
+   * Puts an opened document (a file from disk, a saved file, a share link) in the pane. A large
+   * one is shown in the tree rather than the editor, and is parsed once the pane has had time to
+   * show "Parsing…". Returns true when that moved the pane from the editor to the tree.
+   */
+  private openText(panel: PanelState, text: string): boolean {
+    panel.jsonText = text;
+    if (text.length <= LARGE_FILE_CHARS) {
+      this.parsePanel(panel);
+      return false;
+    }
+    panel.parsedJson = null;
+    panel.jsonError = null;
+    panel.isValid = false;
+    panel.errorLocation = null;
+    panel.parsing = true;
+    this.scheduleParse(panel, OPEN_PARSE_DELAY_MS);
+    if (panel.mode !== 'editor') return false;
+    panel.mode = 'tree';
+    return true;
   }
 
   setActive(panel: PanelState): void {
@@ -320,13 +353,18 @@ export class App implements OnDestroy {
       return;
     }
     // Parsing a large document on every keystroke stalls typing: wait for a pause.
+    this.scheduleParse(panel, PARSE_DEBOUNCE_MS);
+  }
+
+  /** Parses the pane after `delay` ms, replacing a parse already waiting. */
+  private scheduleParse(panel: PanelState, delay: number): void {
     clearTimeout(this.parseTimers.get(panel));
     this.parseTimers.set(
       panel,
       setTimeout(() => {
         this.parsePanel(panel);
         this.cdr.markForCheck();
-      }, PARSE_DEBOUNCE_MS),
+      }, delay),
     );
   }
 
@@ -340,6 +378,7 @@ export class App implements OnDestroy {
     this.parseTimers.delete(panel);
     const text = panel.jsonText;
     panel.errorLocation = null;
+    panel.parsing = false;
     if (!text.trim()) {
       panel.parsedJson = null;
       panel.jsonError = null;
@@ -596,6 +635,9 @@ export class App implements OnDestroy {
   }
 
   clearJson(panel: PanelState): void {
+    clearTimeout(this.parseTimers.get(panel));
+    this.parseTimers.delete(panel);
+    panel.parsing = false;
     panel.jsonText = '';
     panel.parsedJson = null;
     panel.jsonError = null;
@@ -991,12 +1033,14 @@ export class App implements OnDestroy {
         const text = await file.text();
         panel.currentFileId = null;
         panel.sourceName = file.name;
-        this.onTextChange(text, panel);
+        this.activePanel = panel;
+        const asTree = this.openText(panel, text);
         this.cdr.markForCheck();
         this.snackBar.open(
-          `Opened "${file.name}" in the ${panel === this.left ? 'left' : 'right'} pane`,
+          `Opened "${file.name}" in the ${panel === this.left ? 'left' : 'right'} pane` +
+            (asTree ? ` as a tree: ${LARGE_FILE_NOTE}` : ''),
           '',
-          { duration: 1800 },
+          { duration: asTree ? 5000 : 1800 },
         );
       } catch {
         this.snackBar.open(`Could not read "${file.name}"`, '', { duration: 3000 });
@@ -1172,19 +1216,24 @@ export class App implements OnDestroy {
     const viewBefore = this.viewMode;
     try {
       const shared = await this.share.read(hash);
+      const asTree: string[] = [];
       for (const [panel, text] of [
         [this.left, shared.left],
         [this.right, shared.right],
       ] as const) {
         panel.currentFileId = null;
         panel.sourceName = null;
-        panel.jsonText = text;
-        this.parsePanel(panel);
+        if (this.openText(panel, text)) asTree.push(panel === this.left ? 'left' : 'right');
       }
       this.viewMode = shared.view;
       this.share.clearHash();
-      const ref = this.snackBar.open('Opened the shared documents', hadWork ? 'Undo' : '', {
-        duration: hadWork ? 10000 : 3000,
+      const note = !asTree.length
+        ? ''
+        : asTree.length === 2
+          ? `, both as trees: ${LARGE_FILE_NOTE}`
+          : `, the ${asTree[0]} one as a tree: ${LARGE_FILE_NOTE}`;
+      const ref = this.snackBar.open(`Opened the shared documents${note}`, hadWork ? 'Undo' : '', {
+        duration: hadWork ? 10000 : note ? 5000 : 3000,
       });
       if (hadWork) {
         ref.onAction().subscribe(() => {
@@ -1571,10 +1620,16 @@ export class App implements OnDestroy {
     event?.stopPropagation();
     panel.currentFileId = file.id;
     panel.sourceName = null;
-    this.onTextChange(file.content, panel);
+    this.activePanel = panel;
+    const asTree = this.openText(panel, file.content);
     if (this.isNarrow) this.closeFilesPanel();
     const side = panel === this.left ? 'left' : 'right';
-    this.snackBar.open(`Opened "${file.name}" in the ${side} pane`, '', { duration: 1500 });
+    this.snackBar.open(
+      `Opened "${file.name}" in the ${side} pane` +
+        (asTree ? ` as a tree: ${LARGE_FILE_NOTE}` : ''),
+      '',
+      { duration: asTree ? 5000 : 1500 },
+    );
   }
 
   isOpenIn(file: SavedFile, panel: PanelState): boolean {

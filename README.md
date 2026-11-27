@@ -92,6 +92,7 @@ Inside a filter: `@` is the current item, `$` the root; compare with `== != < <=
 
 - Saved files have no fixed size limit beyond the browser's storage quota. If IndexedDB is unavailable (some private modes), they fall back to local storage, which holds about 5 MB. A save that fails shows an error, and the pane stays marked as unsaved.
 - Files over 25 MB are not opened. Share links over 100,000 characters are refused (links over 8,000 may be cut off by chat apps).
+- Documents over 5 million characters (about 5 MB), whether opened from disk or the saved files or from a share link, open in the tree instead of the editor, because the editor is slow with very large text. The pane shows *Parsing…* until the tree is ready. Switch the pane to **Editor** to edit the text; a pane already showing a table stays a table.
 - Unsaved text over 20 MB is not kept in the session (2 MB when IndexedDB is unavailable and local storage is used).
 - Tree rows are one line; long values are cut with an ellipsis (select the node and use **Copy value** for the full text).
 - Large-number precision relies on `JSON.parse` source-text access (Chrome 114+, Firefox 135+, Safari 18.4+). In older browsers numbers behave as in plain JavaScript.
