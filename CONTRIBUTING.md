@@ -38,8 +38,9 @@ npm start                         # http://localhost:4200
 | `npm run format:check` | Prettier check; `npm run format` fixes the files |
 | `npm run e2e` | End-to-end tests (Playwright). Run `npx playwright install chromium` once first |
 
-The build prints a bundle-size budget warning for the initial bundle (Monaco). That is expected and
-not a failure.
+The initial bundle budget sits just above today's size, so a budget warning from the build means
+your change grew the bundle. Load rarely used code lazily (`await import(...)`) instead of raising
+the budget.
 
 The [README](README.md) explains the features, the source layout and the main gotchas. Read its
 *Development* section before changing code.

@@ -27,9 +27,11 @@ Before calling a task done, run the tests, `npm run lint`, `npm run format:check
 build, and `npm run lint:styles` if you changed a stylesheet. Run `npm run e2e` too if you changed UI behaviour.
 CI runs the lint, the style lint, the format check, the unit tests and the build on every PR, plus the end-to-end tests in a separate job.
 
-The build prints a bundle-size budget warning for the initial bundle (Monaco). It is expected today
-and is not a failure; don't treat it as a regression unless the build errors. A component style
-budget warning (over 12 kB) is new, so split the stylesheet into a child component instead.
+The initial bundle budget in `angular.json` (warning 720 kB, error 800 kB) sits just above today's
+size, about 703 kB, most of it Angular and Material (Monaco loads separately from `/vs/`). A budget
+warning means the bundle grew: load the new code lazily (`await import(...)` at the call site, as
+the converters and the schema validator do) rather than raising the budget. A component style
+budget warning (over 12 kB) is new too, so split the stylesheet into a child component instead.
 
 ## Code conventions
 
