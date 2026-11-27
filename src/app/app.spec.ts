@@ -2,7 +2,16 @@ import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { FormsModule } from '@angular/forms';
 import { MatMenuModule } from '@angular/material/menu';
-import { App, LARGE_TEXT_CHARS, PARSE_DEBOUNCE_MS, SavedFile, WORKER_MIN_CHARS } from './app';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import {
+  App,
+  LARGE_FILE_CHARS,
+  LARGE_TEXT_CHARS,
+  OPEN_PARSE_DELAY_MS,
+  PARSE_DEBOUNCE_MS,
+  SavedFile,
+  WORKER_MIN_CHARS,
+} from './app';
 import { SESSION_SAVE_DELAY_MS } from './services/session.service';
 import { LosslessNumber } from './utils/json-parse';
 import { JsonWorkerMessage, handleJsonRequest } from './utils/json-worker-handler';
@@ -741,6 +750,77 @@ describe('App', () => {
     expect(app.isDirty(app.right)).toBe(true); // not saved in the app yet
   });
 
+  describe('opening large documents', () => {
+    /** A valid document longer than LARGE_FILE_CHARS. */
+    const huge = `{"n":1,"pad":"${'x'.repeat(LARGE_FILE_CHARS)}"}`;
+
+    afterEach(() => vi.useRealTimers());
+
+    it('opens a large file in the tree, parsing it after the pane shows "Parsing…"', async () => {
+      const app = await create();
+      const snack = vi.spyOn(TestBed.inject(MatSnackBar), 'open');
+      vi.useFakeTimers();
+
+      await app.openFiles([fakeFile('big.json', huge)], app.right);
+
+      expect(app.right.mode).toBe('tree');
+      expect(app.right.parsing).toBe(true);
+      expect(app.right.parsedJson).toBeNull();
+      expect(app.right.jsonError).toBeNull();
+      expect(app.activePanel).toBe(app.right);
+      expect(snack.mock.calls.at(-1)?.[0]).toBe(
+        'Opened "big.json" in the right pane as a tree: large files are slow in the editor',
+      );
+
+      vi.advanceTimersByTime(OPEN_PARSE_DELAY_MS);
+      expect(app.right.parsing).toBe(false);
+      expect(app.right.isValid).toBe(true);
+      expect(app.right.parsedJson.n).toBe(1);
+    });
+
+    it('keeps the table view, and opens smaller files in the editor', async () => {
+      const app = await create();
+      app.left.mode = 'table';
+      await app.openFiles([fakeFile('big.json', huge), fakeFile('a.json', '{"a":1}')], app.left);
+      expect(app.left.mode).toBe('table');
+      expect(app.right.mode).toBe('editor');
+      expect(app.right.parsedJson).toEqual({ a: 1 });
+    });
+
+    it('opens a large saved file in the tree', async () => {
+      const app = await create();
+      app.openFileIn(file('1', 'big', huge), app.left);
+      expect(app.left.mode).toBe('tree');
+      expect(app.left.currentFileId).toBe('1');
+      expect(app.left.parsing).toBe(true);
+    });
+
+    it('parses at once when the pane is switched to the editor before the parse runs', async () => {
+      const app = await create();
+      vi.useFakeTimers();
+      await app.openFiles([fakeFile('big.json', huge)], app.left);
+
+      app.setPanelMode(app.left, 'editor');
+
+      expect(app.left.parsing).toBe(false);
+      expect(app.left.isValid).toBe(true);
+      expect(app.left.mode).toBe('editor');
+    });
+
+    it('drops the pending parse when the pane is cleared', async () => {
+      const app = await create();
+      vi.useFakeTimers();
+      await app.openFiles([fakeFile('big.json', huge)], app.left);
+
+      app.clearJson(app.left);
+      vi.advanceTimersByTime(OPEN_PARSE_DELAY_MS);
+
+      expect(app.left.parsing).toBe(false);
+      expect(app.left.jsonText).toBe('');
+      expect(app.left.parsedJson).toBeNull();
+    });
+  });
+
   it('refuses files that are too large', async () => {
     const app = await create();
     await app.openFiles([fakeFile('huge.json', '{}', 30 * 1024 * 1024)], app.left);
@@ -997,6 +1077,27 @@ describe('App', () => {
         configurable: true,
         value: { writeText: async (t: string) => void copied.push(t) },
       });
+    });
+
+    it('opens a large shared document in the tree', async () => {
+      const app = await create();
+      const huge = `{"pad":"${'x'.repeat(LARGE_FILE_CHARS)}"}`;
+      app.onTextChange(huge, app.left);
+      app.onTextChange('{"right":2}', app.right);
+      await app.shareLink();
+      const hash = copied[0].slice(copied[0].indexOf('#'));
+
+      const other = await create();
+      const snack = vi.spyOn(TestBed.inject(MatSnackBar), 'open');
+      await other.openSharedHash(hash);
+
+      expect(other.left.mode).toBe('tree');
+      expect(other.left.parsing).toBe(true);
+      expect(other.right.mode).toBe('editor');
+      expect(other.right.parsedJson).toEqual({ right: 2 });
+      expect(snack.mock.calls.at(-1)?.[0]).toBe(
+        'Opened the shared documents, the left one as a tree: large files are slow in the editor',
+      );
     });
 
     it('copies a link containing both panes and the view', async () => {

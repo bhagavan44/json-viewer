@@ -229,6 +229,20 @@
     flex-direction: column;
   }
 
+  // A large opened document, before its parse: shown in place of the tree or table.
+  .parsing-state {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    opacity: 0.6;
+
+    mat-icon {
+      @include icon-size(20px);
+    }
+  }
+
   .resize-handle {
     width: 6px;
     flex-shrink: 0;

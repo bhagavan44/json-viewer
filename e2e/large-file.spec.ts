@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { leftPanel } from './helpers';
+import { leftPanel, openShared, rightPanel } from './helpers';
 
 /** About 5 MB: 25,000 records, so the tree has to stay virtual and search has to be quick. */
 function largeDocument(): string {
@@ -14,7 +14,9 @@ function largeDocument(): string {
   return JSON.stringify({ generatedAt: '2026-01-01T00:00:00Z', records }, null, 2);
 }
 
-test('opens a large file and searches it in the tree', async ({ page }) => {
+test('opens a large file in the tree, searches it, and can switch to the editor', async ({
+  page,
+}) => {
   test.slow();
   const text = largeDocument();
   expect(text.length).toBeGreaterThan(5_000_000);
@@ -29,10 +31,16 @@ test('opens a large file and searches it in the tree', async ({ page }) => {
   await (
     await chooser
   ).setFiles({ name: 'catalogue.json', mimeType: 'application/json', buffer: Buffer.from(text) });
+  await expect(page.getByText('in the left pane as a tree')).toBeVisible();
   await expect(left.locator('.status-badge')).toContainText('Valid', { timeout: 20_000 });
   await expect(left.locator('.panel-name')).toHaveText('catalogue.json');
 
-  await left.getByRole('button', { name: 'Tree view' }).click();
+  // Opened straight in the tree: the editor was never created for it.
+  await expect(left.getByRole('button', { name: 'Tree view' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await expect(left.locator('.monaco-editor')).toHaveCount(0);
   await expect(left.locator('.node-row[data-path="$.records"]')).toBeVisible();
   // Only the rows in view are rendered.
   expect(await left.locator('.node-row').count()).toBeLessThan(200);
@@ -48,4 +56,23 @@ test('opens a large file and searches it in the tree', async ({ page }) => {
   await expect(left.locator('.tb-count')).toHaveText('1 / 1923');
   // Generous, so a slow CI runner does not fail it; it catches a tree or search that hangs.
   expect(Date.now() - started).toBeLessThan(30_000);
+
+  await left.getByRole('button', { name: 'Editor view' }).click();
+  await expect(left.locator('.monaco-editor')).toBeVisible({ timeout: 20_000 });
+  await expect(left.locator('.status-badge')).toContainText('Valid');
+});
+
+test('opens a large shared document in the tree', async ({ page }) => {
+  test.slow();
+  // Repetitive, so it compresses into a link the app accepts (unlike largeDocument()).
+  const records = Array.from({ length: 80_000 }, () => ({ sku: 'SKU-1', qty: 1, name: 'Same' }));
+  const text = JSON.stringify({ records }, null, 2);
+  expect(text.length).toBeGreaterThan(5_000_000);
+  await openShared(page, text, '{"small": true}');
+  await expect(page.getByText('the left one as a tree')).toBeVisible();
+  const left = leftPanel(page);
+  await expect(left.locator('.node-row[data-path="$.records"]')).toBeVisible({ timeout: 20_000 });
+  await expect(left.locator('.monaco-editor')).toHaveCount(0);
+  // The small document still opens in the editor.
+  await expect(rightPanel(page).locator('.monaco-editor')).toBeVisible();
 });

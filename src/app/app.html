@@ -451,8 +451,12 @@
       (codeChange)="onTextChange($event, p)"
     >
     </app-json-editor>
+    <div class="parsing-state" *ngIf="p.parsing && !isEditorView(p)" role="status">
+      <mat-icon>hourglass_empty</mat-icon>
+      <span>Parsing…</span>
+    </div>
     <app-json-tree
-      *ngIf="isTreeView(p)"
+      *ngIf="isTreeView(p) && !p.parsing"
       [data]="p.parsedJson"
       [error]="p.jsonError"
       [isEmpty]="!p.jsonText.trim()"
@@ -469,7 +473,7 @@
     >
     </app-json-tree>
     <app-json-table
-      *ngIf="isTableView(p)"
+      *ngIf="isTableView(p) && !p.parsing"
       [data]="p.parsedJson"
       [error]="p.jsonError"
       [isEmpty]="!p.jsonText.trim()"
@@ -489,18 +493,26 @@
       <span
         class="status-badge"
         [class.valid]="p.isValid && p.parsedJson !== null"
-        [class.invalid]="!p.isValid && !!p.jsonText.trim()"
-        [class.empty]="!p.jsonText.trim()"
+        [class.invalid]="!p.isValid && !p.parsing && !!p.jsonText.trim()"
+        [class.empty]="!p.jsonText.trim() || p.parsing"
       >
         <mat-icon class="status-icon">{{
           p.isValid && p.parsedJson !== null
             ? 'check_circle'
             : !p.jsonText.trim()
               ? 'info'
-              : 'cancel'
+              : p.parsing
+                ? 'hourglass_empty'
+                : 'cancel'
         }}</mat-icon>
         <span>{{
-          p.isValid && p.parsedJson !== null ? 'Valid' : !p.jsonText.trim() ? 'Empty' : 'Invalid'
+          p.isValid && p.parsedJson !== null
+            ? 'Valid'
+            : !p.jsonText.trim()
+              ? 'Empty'
+              : p.parsing
+                ? 'Parsing…'
+                : 'Invalid'
         }}</span>
       </span>
       <button
